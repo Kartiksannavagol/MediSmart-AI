@@ -2,110 +2,102 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Check, X, Bell, Search, ChevronRight, ArrowRight,
-  Calendar, FileText, Activity, Clock, Star,
-  LogOut, Settings, User, Heart, Pill, TrendingUp,
-  AlertCircle, CheckCircle, Plus, Menu,
+  Bell, Search, LogOut, ChevronRight, Plus,
+  Check, CheckCircle, X, TrendingUp, TrendingDown, Zap,
 } from "lucide-react";
 
-/* ─────────────────────────────────────────────
+const FONT_LINK = `https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap`;
+
+/* ═══════════════════════════════════════
    MOCK DATA
-───────────────────────────────────────────── */
-const PATIENT = {
-  name: "Alex Johnson",
-  avatar: "https://randomuser.me/api/portraits/men/32.jpg",
-  plan: "Pro",
-  memberSince: "Jan 2024",
-};
+═══════════════════════════════════════ */
+const VITALS = [
+  { label: "Heart Rate",     value: "72",     unit: "bpm",  trend: +2,   icon: "❤️", color: "#ff6b6b", bg: "rgba(255,107,107,0.1)" },
+  { label: "Blood Pressure", value: "118/76", unit: "mmHg", trend: null, icon: "💉", color: "#14b8a6", bg: "rgba(20,184,166,0.1)"   },
+  { label: "SpO₂",           value: "98",     unit: "%",    trend: null, icon: "🫁", color: "#3b82f6", bg: "rgba(59,130,246,0.1)"   },
+  { label: "Weight",         value: "74",     unit: "kg",   trend: -0.5, icon: "⚖️", color: "#a78bfa", bg: "rgba(167,139,250,0.1)"  },
+];
 
 const UPCOMING = [
-  { id: 1, doctor: "Dr. Priya Mehta",    specialty: "Cardiologist",  date: "Today",    time: "3:30 PM", avatar: "https://randomuser.me/api/portraits/women/44.jpg", mode: "Video",     status: "confirmed" },
-  { id: 2, doctor: "Dr. Arjun Patel",    specialty: "Neurologist",   date: "Apr 21",   time: "10:00 AM",avatar: "https://randomuser.me/api/portraits/men/54.jpg",   mode: "In-Person", status: "confirmed" },
-  { id: 3, doctor: "Dr. Lisa Chen",      specialty: "Pediatrician",  date: "Apr 25",   time: "2:00 PM", avatar: "https://randomuser.me/api/portraits/women/22.jpg", mode: "Video",     status: "pending"   },
+  { id: 1, doctor: "Dr. Priya Mehta",  specialty: "Cardiologist", date: "Today",  time: "3:30 PM",  mode: "Video",     avatar: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { id: 2, doctor: "Dr. Arjun Patel",  specialty: "Neurologist",  date: "Apr 21", time: "10:00 AM", mode: "In-Person", avatar: "https://randomuser.me/api/portraits/men/54.jpg"   },
+  { id: 3, doctor: "Dr. Lisa Chen",    specialty: "Pediatrician", date: "Apr 25", time: "2:00 PM",  mode: "Video",     avatar: "https://randomuser.me/api/portraits/women/22.jpg" },
 ];
 
-const PAST = [
-  { id: 4, doctor: "Dr. James Whitfield", specialty: "Cardiologist", date: "Apr 10", time: "11:00 AM", avatar: "https://randomuser.me/api/portraits/men/32.jpg",   diagnosis: "Hypertension Stage 1", rating: 5 },
-  { id: 5, doctor: "Dr. Sofia Reyes",     specialty: "Dermatologist",date: "Mar 28", time: "9:30 AM",  avatar: "https://randomuser.me/api/portraits/women/65.jpg", diagnosis: "Eczema – mild",        rating: 5 },
-  { id: 6, doctor: "Dr. Marcus Brown",    specialty: "Orthopedist",  date: "Mar 14", time: "4:00 PM",  avatar: "https://randomuser.me/api/portraits/men/77.jpg",   diagnosis: "Knee strain",          rating: 4 },
+const PAST_VISITS = [
+  { id: 4, doctor: "Dr. James Whitfield", specialty: "Cardiologist",  date: "Apr 10", time: "11:00 AM", avatar: "https://randomuser.me/api/portraits/men/32.jpg",   diagnosis: "Hypertension Stage 1", rating: 5 },
+  { id: 5, doctor: "Dr. Sofia Reyes",     specialty: "Dermatologist", date: "Mar 28", time: "9:30 AM",  avatar: "https://randomuser.me/api/portraits/women/65.jpg", diagnosis: "Eczema – mild",        rating: 5 },
+  { id: 6, doctor: "Dr. Marcus Brown",    specialty: "Orthopedist",   date: "Mar 14", time: "4:00 PM",  avatar: "https://randomuser.me/api/portraits/men/77.jpg",   diagnosis: "Knee strain",          rating: 4 },
 ];
 
-const VITALS = [
-  { label: "Heart Rate",    value: "72",  unit: "bpm",  icon: Heart,      color: "#ef4444", bg: "#fef2f2", trend: "+2%",  trendUp: true  },
-  { label: "Blood Pressure",value: "118/76",unit:"mmHg",icon: Activity,   color: "#0d9488", bg: "#f0fdfa", trend: "Normal",trendUp: null  },
-  { label: "SpO₂",          value: "98",  unit: "%",    icon: TrendingUp, color: "#3b82f6", bg: "#eff6ff", trend: "Good", trendUp: null  },
-  { label: "Weight",        value: "74",  unit: "kg",   icon: User,       color: "#8b5cf6", bg: "#f5f3ff", trend: "-0.5kg",trendUp: false },
-];
-
-const MEDICATIONS = [
-  { name: "Amlodipine",  dose: "5mg",   freq: "Once daily",    next: "8:00 AM",  status: "taken"   },
-  { name: "Metformin",   dose: "500mg", freq: "Twice daily",   next: "2:00 PM",  status: "pending" },
-  { name: "Atorvastatin",dose: "20mg",  freq: "Once at night", next: "10:00 PM", status: "pending" },
+const INIT_MEDS = [
+  { name: "Amlodipine",   dose: "5mg",   freq: "Once daily",   time: "8:00 AM",  taken: true  },
+  { name: "Metformin",    dose: "500mg", freq: "Twice daily",  time: "2:00 PM",  taken: false },
+  { name: "Atorvastatin", dose: "20mg",  freq: "Once nightly", time: "10:00 PM", taken: false },
 ];
 
 const REPORTS = [
-  { name: "Blood Panel – Complete",    date: "Apr 10, 2026", type: "Lab",      size: "1.2 MB" },
-  { name: "ECG Report",                date: "Apr 10, 2026", type: "Cardiac",  size: "0.8 MB" },
-  { name: "Chest X-Ray",               date: "Mar 28, 2026", type: "Imaging",  size: "3.4 MB" },
-  { name: "Dermatology Consultation",  date: "Mar 28, 2026", type: "Report",   size: "0.5 MB" },
+  { name: "Blood Panel – Complete",   date: "Apr 10", type: "Lab",     icon: "🧪" },
+  { name: "ECG Report",               date: "Apr 10", type: "Cardiac", icon: "💓" },
+  { name: "Chest X-Ray",              date: "Mar 28", type: "Imaging", icon: "🫁" },
+  { name: "Dermatology Consultation", date: "Mar 28", type: "Report",  icon: "📋" },
 ];
 
 const NOTIFICATIONS = [
-  { id: 1, text: "Dr. Priya Mehta confirmed your appointment for Today 3:30 PM", time: "10 min ago", read: false },
-  { id: 2, text: "Your blood pressure report is ready to view",                  time: "1 hr ago",  read: false },
-  { id: 3, text: "Reminder: Take Metformin 500mg at 2:00 PM",                   time: "2 hrs ago", read: true  },
-  { id: 4, text: "New symptom check available — AI model updated",              time: "Yesterday", read: true  },
+  { id: 1, text: "Dr. Priya confirmed your appointment for Today 3:30 PM", time: "10 min ago", read: false },
+  { id: 2, text: "Your blood panel report is ready to view",               time: "1 hr ago",   read: false },
+  { id: 3, text: "Reminder: Metformin 500mg due at 2:00 PM",              time: "2 hrs ago",  read: true  },
 ];
 
-const AI_TIPS = [
-  "Your recent BP reading of 118/76 is excellent. Keep up the low-sodium diet.",
-  "You've had 3 cardiology visits this year. Consider scheduling your annual ECG.",
-  "Your Metformin dose is due at 2:00 PM. Don't skip — consistency matters.",
+const AI_TIP = { text: "Your BP of 118/76 is excellent. Keep your low-sodium diet going strong.", icon: "💪" };
+
+const ALL_DOCTORS = [
+  { name: "Dr. Priya Mehta",     specialty: "Cardiologist",   rating: 4.9, reviews: 312, next: "Today 3:30 PM",     img: "https://randomuser.me/api/portraits/women/44.jpg", exp: "14 yrs", fee: "$120" },
+  { name: "Dr. James Whitfield", specialty: "Cardiologist",   rating: 4.8, reviews: 201, next: "Today 5:00 PM",     img: "https://randomuser.me/api/portraits/men/32.jpg",   exp: "18 yrs", fee: "$140" },
+  { name: "Dr. Sofia Reyes",     specialty: "Dermatologist",  rating: 4.9, reviews: 178, next: "Tomorrow 10:00 AM", img: "https://randomuser.me/api/portraits/women/65.jpg", exp: "10 yrs", fee: "$110" },
+  { name: "Dr. Arjun Patel",     specialty: "Neurologist",    rating: 4.7, reviews: 145, next: "Today 6:30 PM",     img: "https://randomuser.me/api/portraits/men/54.jpg",   exp: "12 yrs", fee: "$160" },
+  { name: "Dr. Lisa Chen",       specialty: "Pediatrician",   rating: 5.0, reviews: 263, next: "Today 4:00 PM",     img: "https://randomuser.me/api/portraits/women/22.jpg", exp: "9 yrs",  fee: "$95"  },
+  { name: "Dr. Marcus Brown",    specialty: "Orthopedist",    rating: 4.8, reviews: 187, next: "Tomorrow 9:00 AM",  img: "https://randomuser.me/api/portraits/men/77.jpg",   exp: "16 yrs", fee: "$130" },
+  { name: "Dr. Nisha Kapoor",    specialty: "Neurologist",    rating: 4.6, reviews: 87,  next: "Apr 22, 2:15 PM",  img: "https://randomuser.me/api/portraits/women/33.jpg", exp: "8 yrs",  fee: "$145" },
+  { name: "Dr. Anand Mathur",    specialty: "Ophthalmologist",rating: 4.7, reviews: 112, next: "Apr 25, 11:30 AM", img: "https://randomuser.me/api/portraits/men/41.jpg",   exp: "11 yrs", fee: "$105" },
 ];
 
-/* ─────────────────────────────────────────────
-   SMALL COMPONENTS
-───────────────────────────────────────────── */
-function Avatar({ src, name, size = 40 }) {
-  return (
-    <img
-      src={src}
-      alt={name}
-      style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }}
-    />
-  );
-}
+const SPECIALTIES = ["All", "Cardiologist", "Dermatologist", "Neurologist", "Pediatrician", "Orthopedist", "Ophthalmologist"];
 
-function Badge({ children, color = "teal" }) {
-  const map = {
-    teal:   { bg: "#f0fdfa", text: "#0d9488" },
-    green:  { bg: "#f0fdf4", text: "#16a34a" },
-    amber:  { bg: "#fffbeb", text: "#d97706" },
-    red:    { bg: "#fef2f2", text: "#dc2626" },
-    blue:   { bg: "#eff6ff", text: "#2563eb" },
-    gray:   { bg: "#f9fafb", text: "#6b7280" },
-  };
-  const c = map[color] || map.teal;
+const TABS = ["Overview", "Symptom Checker", "Appointments", "Medications", "Records", "Doctors", "Settings"];
+
+const NOTIF_ITEMS = [
+  { key: "appointments", label: "Appointment reminders" },
+  { key: "medications",  label: "Medication alerts"     },
+  { key: "insights",     label: "AI health insights"    },
+  { key: "promo",        label: "Promotional emails"    },
+];
+
+/* ═══════════════════════════════════════
+   SHARED COMPONENTS
+═══════════════════════════════════════ */
+function NavPill({ children, active, onClick }) {
   return (
-    <span style={{
-      background: c.bg, color: c.text,
-      fontSize: 11, fontWeight: 600,
-      padding: "3px 10px", borderRadius: 999,
-      whiteSpace: "nowrap",
+    <button onClick={onClick} style={{
+      padding: "8px 16px", borderRadius: 11, fontSize: 13,
+      fontWeight: active ? 700 : 500,
+      border: "none", cursor: "pointer", transition: "all 0.18s",
+      background: active ? "#fff" : "transparent",
+      color: active ? "#0f172a" : "#94a3b8",
+      boxShadow: active ? "0 2px 10px rgba(0,0,0,0.08)" : "none",
+      whiteSpace: "nowrap", fontFamily: "inherit",
     }}>
       {children}
-    </span>
+    </button>
   );
 }
 
 function Card({ children, style = {} }) {
   return (
     <div style={{
-      background: "#fff",
-      borderRadius: 20,
+      background: "#fff", borderRadius: 24, padding: "24px",
       border: "1px solid #f1f5f9",
-      boxShadow: "0 1px 6px rgba(0,0,0,0.05)",
-      padding: "24px",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
       ...style,
     }}>
       {children}
@@ -113,15 +105,15 @@ function Card({ children, style = {} }) {
   );
 }
 
-function SectionHeader({ title, action, onAction }) {
+function SectionTitle({ title, action, onAction }) {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-      <h3 style={{ fontSize: 15, fontWeight: 700, color: "#0f172a", margin: 0 }}>{title}</h3>
+      <h3 style={{ fontSize: 15, fontWeight: 800, color: "#0f172a", margin: 0 }}>{title}</h3>
       {action && (
         <button onClick={onAction} style={{
-          fontSize: 12, color: "#0d9488", fontWeight: 600,
+          fontSize: 12, color: "#14b8a6", fontWeight: 700,
           background: "none", border: "none", cursor: "pointer",
-          display: "flex", alignItems: "center", gap: 4,
+          display: "flex", alignItems: "center", gap: 3, fontFamily: "inherit",
         }}>
           {action} <ChevronRight size={13} />
         </button>
@@ -130,509 +122,553 @@ function SectionHeader({ title, action, onAction }) {
   );
 }
 
-/* ─────────────────────────────────────────────
-   NOTIFICATION PANEL
-───────────────────────────────────────────── */
-function NotificationPanel({ onClose }) {
+function StatCard({ v }) {
   return (
     <div style={{
-      position: "absolute", top: 52, right: 0, zIndex: 100,
-      width: 340, background: "#fff",
-      borderRadius: 20, border: "1px solid #e2e8f0",
-      boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
-      overflow: "hidden",
-    }}>
-      <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f1f5f9", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Notifications</span>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
-          <X size={16} />
-        </button>
-      </div>
-      {NOTIFICATIONS.map(n => (
-        <div key={n.id} style={{
-          padding: "14px 20px",
-          background: n.read ? "#fff" : "#f0fdfa",
-          borderBottom: "1px solid #f8fafc",
-          display: "flex", gap: 12, alignItems: "flex-start",
-        }}>
-          <div style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: n.read ? "transparent" : "#14b8a6",
-            marginTop: 5, flexShrink: 0,
-          }} />
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 12, color: "#334155", lineHeight: 1.5, margin: "0 0 3px" }}>{n.text}</p>
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>{n.time}</p>
-          </div>
+      background: "#fff", borderRadius: 24, padding: "22px 24px",
+      border: "1px solid #f1f5f9",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
+      transition: "transform 0.2s, box-shadow 0.2s",
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = "0 8px 28px rgba(0,0,0,0.09)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)";    e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)"; }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 14, background: v.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
+          {v.icon}
         </div>
-      ))}
-      <div style={{ padding: "12px 20px", textAlign: "center" }}>
-        <button style={{ fontSize: 12, color: "#0d9488", fontWeight: 600, background: "none", border: "none", cursor: "pointer" }}>
-          Mark all as read
-        </button>
+        {v.trend !== null ? (
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999,
+            background: v.trend > 0 ? "rgba(239,68,68,0.1)" : "rgba(22,163,74,0.1)",
+            color: v.trend > 0 ? "#ef4444" : "#16a34a",
+            display: "flex", alignItems: "center", gap: 3,
+          }}>
+            {v.trend > 0 ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            {v.trend > 0 ? "+" : ""}{v.trend} {v.unit === "kg" ? "kg" : "%"}
+          </span>
+        ) : (
+          <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 999, background: "rgba(20,184,166,0.1)", color: "#0d9488" }}>
+            Normal
+          </span>
+        )}
       </div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>
+        {v.value}
+        <span style={{ fontSize: 13, fontWeight: 500, color: "#94a3b8", marginLeft: 5 }}>{v.unit}</span>
+      </div>
+      <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 6, fontWeight: 500 }}>{v.label}</div>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   SIDEBAR
-───────────────────────────────────────────── */
-const NAV_ITEMS = [
-  { id: "dashboard",  label: "Dashboard",       icon: Activity  },
-  { id: "symptoms",   label: "Symptom Checker", icon: AlertCircle },
-  { id: "doctors",    label: "Find Doctors",    icon: User      },
-  { id: "appointments",label:"Appointments",    icon: Calendar  },
-  { id: "records",    label: "Health Records",  icon: FileText  },
-  { id: "medications",label: "Medications",     icon: Pill      },
-];
-
-function Sidebar({ active, onNav, collapsed, onToggle, onLogout }) {
+function NotifDropdown({ onClose }) {
   return (
-    <aside style={{
-      width: collapsed ? 72 : 240,
-      background: "#0b1c2c",
-      display: "flex", flexDirection: "column",
-      height: "100vh", position: "fixed", top: 0, left: 0,
-      zIndex: 50, transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)",
-      overflow: "hidden",
-    }}>
-      {/* Logo */}
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 98 }} />
       <div style={{
-        padding: collapsed ? "22px 18px" : "22px 24px",
-        display: "flex", alignItems: "center", gap: 12,
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
-        flexShrink: 0,
+        position: "absolute", top: 52, right: 0, zIndex: 99,
+        width: 340, background: "#fff",
+        borderRadius: 20, border: "1px solid #f1f5f9",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.13)",
+        overflow: "hidden",
       }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 10, flexShrink: 0,
-          background: "linear-gradient(135deg,#0d9488,#14b8a6)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <Check size={16} color="white" strokeWidth={3} />
+        <div style={{ padding: "16px 20px 12px", borderBottom: "1px solid #f8fafc", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>Notifications</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}>
+            <X size={16} />
+          </button>
         </div>
-        {!collapsed && (
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: 16, whiteSpace: "nowrap" }}>
-            MediSmart<span style={{ color: "#2dd4bf" }}>AI</span>
-          </span>
-        )}
-        <button
-          onClick={onToggle}
-          style={{
-            marginLeft: "auto", background: "none", border: "none",
-            color: "#64748b", cursor: "pointer", padding: 4,
-            display: "flex", flexShrink: 0,
-          }}
-        >
-          <Menu size={16} />
-        </button>
+        {NOTIFICATIONS.map(n => (
+          <div key={n.id} style={{
+            padding: "14px 20px",
+            background: n.read ? "#fff" : "#f0fdfa",
+            borderBottom: "1px solid #f8fafc",
+            display: "flex", gap: 12,
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: n.read ? "transparent" : "#14b8a6", marginTop: 5, flexShrink: 0 }} />
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12, color: "#334155", lineHeight: 1.55, margin: "0 0 3px" }}>{n.text}</p>
+              <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>{n.time}</p>
+            </div>
+          </div>
+        ))}
+        <div style={{ padding: "12px 20px", textAlign: "center" }}>
+          <button style={{ fontSize: 12, color: "#0d9488", fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+            Mark all as read
+          </button>
+        </div>
       </div>
-
-      {/* Nav items */}
-      <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
-        {NAV_ITEMS.map(item => {
-          const Icon = item.icon;
-          const isActive = active === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => onNav(item.id)}
-              title={collapsed ? item.label : ""}
-              style={{
-                width: "100%", display: "flex", alignItems: "center",
-                gap: 12, padding: collapsed ? "11px 14px" : "11px 14px",
-                borderRadius: 12, border: "none", cursor: "pointer",
-                marginBottom: 2, textAlign: "left",
-                background: isActive ? "rgba(20,184,166,0.15)" : "transparent",
-                color: isActive ? "#2dd4bf" : "#94a3b8",
-                transition: "all 0.15s",
-                whiteSpace: "nowrap",
-              }}
-            >
-              <Icon size={18} style={{ flexShrink: 0 }} />
-              {!collapsed && (
-                <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 500 }}>{item.label}</span>
-              )}
-              {isActive && !collapsed && (
-                <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: "#14b8a6" }} />
-              )}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Bottom */}
-      <div style={{ padding: "12px 10px", borderTop: "1px solid rgba(255,255,255,0.07)" }}>
-        <button
-          onClick={() => onNav("settings")}
-          style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 12,
-            padding: "11px 14px", borderRadius: 12, border: "none", cursor: "pointer",
-            background: "transparent", color: "#64748b", marginBottom: 2, whiteSpace: "nowrap",
-          }}
-        >
-          <Settings size={18} style={{ flexShrink: 0 }} />
-          {!collapsed && <span style={{ fontSize: 13, fontWeight: 500 }}>Settings</span>}
-        </button>
-        <button
-          onClick={onLogout}
-          style={{
-            width: "100%", display: "flex", alignItems: "center", gap: 12,
-            padding: "11px 14px", borderRadius: 12, border: "none", cursor: "pointer",
-            background: "transparent", color: "#64748b", whiteSpace: "nowrap",
-          }}
-        >
-          <LogOut size={18} style={{ flexShrink: 0 }} />
-          {!collapsed && <span style={{ fontSize: 13, fontWeight: 500 }}>Log Out</span>}
-        </button>
-      </div>
-    </aside>
+    </>
   );
 }
 
-/* ─────────────────────────────────────────────
-   TAB VIEWS
-───────────────────────────────────────────── */
-
-/* ── Overview (main dashboard) ── */
-function OverviewTab({ navigate }) {
-  const [tipIdx] = useState(0);
+/* ═══════════════════════════════════════
+   TAB: OVERVIEW
+═══════════════════════════════════════ */
+function Overview({ navigate, setActiveTab }) {
+  const [medList, setMedList] = useState(INIT_MEDS);
+  const takenCount = medList.filter(m => m.taken).length;
+  const adherePct  = Math.round((takenCount / medList.length) * 100);
+  const CIRC       = 2 * Math.PI * 50;
+  const dash       = (87 / 100) * CIRC;
+  const patientName = localStorage.getItem("user_name") || "Alex Johnson";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
 
-      {/* AI Health Tip */}
+      {/* Hero banner */}
       <div style={{
-        background: "linear-gradient(135deg,#0b1c2c 0%,#0d3347 100%)",
-        borderRadius: 20, padding: "20px 24px",
-        display: "flex", alignItems: "center", gap: 16,
+        background: "linear-gradient(135deg,#0b1c2c 0%,#0d3347 60%,#083344 100%)",
+        borderRadius: 28, padding: "32px 36px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
         position: "relative", overflow: "hidden",
       }}>
-        <div style={{
-          position: "absolute", right: -20, top: -20,
-          width: 140, height: 140, borderRadius: "50%",
-          background: "rgba(20,184,166,0.12)",
-        }} />
-        <div style={{
-          width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-          background: "rgba(20,184,166,0.2)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <span style={{ fontSize: 20 }}>🤖</span>
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: 11, color: "#2dd4bf", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", margin: "0 0 4px" }}>
-            AI Health Insight
+        <div style={{ position: "absolute", right: 180, top: -60,  width: 220, height: 220, borderRadius: "50%", background: "rgba(20,184,166,0.08)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", right: 40,  bottom: -80, width: 300, height: 300, borderRadius: "50%", background: "rgba(20,184,166,0.05)", pointerEvents: "none" }} />
+
+        <div style={{ zIndex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg,#14b8a6,#0891b2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+              {patientName.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", margin: 0, fontWeight: 500 }}>
+                Good {new Date().getHours() < 12 ? "morning" : "afternoon"} 👋
+              </p>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: "#fff", margin: 0, letterSpacing: "-0.3px", fontFamily: "Georgia, serif" }}>
+                {patientName}
+              </h2>
+            </div>
+          </div>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", margin: "0 0 20px", maxWidth: 420, lineHeight: 1.65 }}>
+            Your health looks great today. 1 appointment coming up and {medList.length - takenCount} medication{medList.length - takenCount !== 1 ? "s" : ""} due.
           </p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", margin: 0, lineHeight: 1.6 }}>
-            {AI_TIPS[tipIdx]}
-          </p>
+          <div style={{ display: "flex", gap: 12 }}>
+            <button onClick={() => setActiveTab("Symptom Checker")} style={{
+              background: "#14b8a6", color: "#fff", border: "none", borderRadius: 14,
+              padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 7,
+              boxShadow: "0 6px 20px rgba(20,184,166,0.4)", fontFamily: "inherit",
+            }}>
+              <Zap size={14} /> Check Symptoms
+            </button>
+            <button onClick={() => setActiveTab("Doctors")} style={{
+              background: "rgba(255,255,255,0.1)", color: "#fff",
+              border: "1px solid rgba(255,255,255,0.18)",
+              borderRadius: 14, padding: "10px 20px", fontSize: 13,
+              fontWeight: 600, cursor: "pointer", backdropFilter: "blur(4px)",
+              fontFamily: "inherit",
+            }}>
+              Book Doctor →
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => navigate("/patient/symptom-checker")}
-          style={{
-            flexShrink: 0, background: "#14b8a6", color: "#fff",
-            border: "none", borderRadius: 12, padding: "9px 16px",
-            fontSize: 12, fontWeight: 600, cursor: "pointer",
-            whiteSpace: "nowrap",
-          }}
-        >
-          Check Symptoms
-        </button>
+
+        {/* Health Score Ring */}
+        <div style={{ zIndex: 1, textAlign: "center", flexShrink: 0 }}>
+          <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto" }}>
+            <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: "rotate(-90deg)" }}>
+              <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10" />
+              <circle
+                cx="60" cy="60" r="50" fill="none"
+                stroke="#14b8a6" strokeWidth="10"
+                strokeDasharray={`${dash} ${CIRC}`}
+                strokeLinecap="round"
+                style={{ transition: "stroke-dasharray 1s ease" }}
+              />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 26, fontWeight: 800, color: "#fff", lineHeight: 1 }}>87</span>
+              <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>score</span>
+            </div>
+          </div>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 10, fontWeight: 500 }}>Health Score</p>
+          <p style={{ fontSize: 11, color: "#2dd4bf", margin: 0, fontWeight: 600 }}>Excellent</p>
+        </div>
       </div>
 
-      {/* Vitals row */}
+      {/* Vitals */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14 }}>
-        {VITALS.map(v => {
-          const Icon = v.icon;
-          return (
-            <Card key={v.label} style={{ padding: "18px 20px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: v.bg, display: "flex",
-                  alignItems: "center", justifyContent: "center",
-                }}>
-                  <Icon size={17} color={v.color} />
-                </div>
-                <span style={{
-                  fontSize: 11, fontWeight: 600,
-                  color: v.trendUp === true ? "#ef4444" : v.trendUp === false ? "#16a34a" : "#0d9488",
-                  background: v.trendUp === true ? "#fef2f2" : v.trendUp === false ? "#f0fdf4" : "#f0fdfa",
-                  padding: "2px 8px", borderRadius: 999,
-                }}>
-                  {v.trend}
-                </span>
-              </div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: "#0f172a", lineHeight: 1 }}>
-                {v.value}
-                <span style={{ fontSize: 12, fontWeight: 500, color: "#94a3b8", marginLeft: 4 }}>{v.unit}</span>
-              </div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>{v.label}</div>
-            </Card>
-          );
-        })}
+        {VITALS.map(v => <StatCard key={v.label} v={v} />)}
       </div>
 
-      {/* Two-column: upcoming + medications */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 20 }}>
+      {/* Bento grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 20 }}>
 
-        {/* Upcoming appointments */}
+        {/* Upcoming Appointments */}
         <Card>
-          <SectionHeader title="Upcoming Appointments" action="View all" onAction={() => {}} />
+          <SectionTitle title="Upcoming Appointments" action="View all" onAction={() => setActiveTab("Appointments")} />
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {UPCOMING.map(a => (
               <div key={a.id} style={{
                 display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 16px", borderRadius: 14,
-                background: a.date === "Today" ? "#f0fdfa" : "#fafafa",
-                border: `1px solid ${a.date === "Today" ? "#99f6e4" : "#f1f5f9"}`,
+                padding: "14px 16px", borderRadius: 18,
+                background: a.date === "Today" ? "linear-gradient(135deg,rgba(20,184,166,0.06),rgba(20,184,166,0.02))" : "#fafafa",
+                border: `1.5px solid ${a.date === "Today" ? "rgba(20,184,166,0.25)" : "#f1f5f9"}`,
               }}>
-                <Avatar src={a.avatar} name={a.doctor} size={44} />
+                <img src={a.avatar} alt={a.doctor} style={{ width: 46, height: 46, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a" }}>{a.doctor}</div>
                   <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{a.specialty}</div>
-                  <div style={{ display: "flex", gap: 8, marginTop: 7, flexWrap: "wrap" }}>
-                    <Badge color={a.date === "Today" ? "teal" : "gray"}>
+                  <div style={{ display: "flex", gap: 7, marginTop: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: a.date === "Today" ? "rgba(20,184,166,0.12)" : "#f1f5f9", color: a.date === "Today" ? "#0d9488" : "#64748b" }}>
                       📅 {a.date} · {a.time}
-                    </Badge>
-                    <Badge color={a.mode === "Video" ? "blue" : "gray"}>
+                    </span>
+                    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999, background: a.mode === "Video" ? "rgba(59,130,246,0.1)" : "#f1f5f9", color: a.mode === "Video" ? "#3b82f6" : "#64748b" }}>
                       {a.mode === "Video" ? "📹" : "🏥"} {a.mode}
-                    </Badge>
+                    </span>
                   </div>
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7, flexShrink: 0 }}>
                   {a.date === "Today" && (
-                    <button style={{
-                      background: "#0d9488", color: "#fff", border: "none",
-                      borderRadius: 10, padding: "7px 14px", fontSize: 11,
-                      fontWeight: 600, cursor: "pointer",
-                    }}>
+                    <button style={{ background: "#14b8a6", color: "#fff", border: "none", borderRadius: 10, padding: "7px 16px", fontSize: 11, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(20,184,166,0.3)", fontFamily: "inherit" }}>
                       Join
                     </button>
                   )}
-                  <button style={{
-                    background: "none", color: "#94a3b8", border: "1px solid #e2e8f0",
-                    borderRadius: 10, padding: "7px 14px", fontSize: 11,
-                    fontWeight: 500, cursor: "pointer",
-                  }}>
+                  <button style={{ background: "none", color: "#94a3b8", border: "1px solid #e2e8f0", borderRadius: 10, padding: "7px 16px", fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
                     Reschedule
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          <button
-            onClick={() => navigate("/patient/doctors")}
-            style={{
-              marginTop: 16, width: "100%", padding: "11px",
-              borderRadius: 12, border: "1.5px dashed #99f6e4",
-              background: "transparent", color: "#0d9488",
-              fontSize: 13, fontWeight: 600, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            }}
+          <button onClick={() => setActiveTab("Doctors")} style={{
+            marginTop: 14, width: "100%", padding: "11px",
+            borderRadius: 14, border: "1.5px dashed #99f6e4", background: "transparent",
+            color: "#0d9488", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            transition: "background 0.15s", fontFamily: "inherit",
+          }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(20,184,166,0.04)"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
           >
             <Plus size={15} /> Book New Appointment
           </button>
         </Card>
 
-        {/* Medications */}
-        <Card>
-          <SectionHeader title="Today's Medications" action="Full schedule" onAction={() => {}} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {MEDICATIONS.map((m, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "12px 14px", borderRadius: 14,
-                background: m.status === "taken" ? "#f0fdf4" : "#fafafa",
-                border: `1px solid ${m.status === "taken" ? "#bbf7d0" : "#f1f5f9"}`,
-              }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                  background: m.status === "taken" ? "#dcfce7" : "#f0fdfa",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16,
-                }}>
-                  💊
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{m.name}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{m.dose} · {m.freq}</div>
-                  <div style={{ fontSize: 11, color: "#64748b", marginTop: 2 }}>
-                    🕒 Next: <strong>{m.next}</strong>
-                  </div>
-                </div>
-                {m.status === "taken" ? (
-                  <CheckCircle size={18} color="#16a34a" />
-                ) : (
-                  <button style={{
-                    background: "#0d9488", color: "#fff", border: "none",
-                    borderRadius: 8, padding: "5px 10px", fontSize: 11,
-                    fontWeight: 600, cursor: "pointer", flexShrink: 0,
-                  }}>
-                    Mark taken
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-          {/* Weekly adherence mini chart */}
-          <div style={{ marginTop: 20, padding: "14px", background: "#fafafa", borderRadius: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontSize: 12, fontWeight: 600, color: "#334155" }}>Weekly Adherence</span>
-              <span style={{ fontSize: 13, fontWeight: 800, color: "#0d9488" }}>86%</span>
-            </div>
-            <div style={{ display: "flex", gap: 4 }}>
-              {["M","T","W","T","F","S","S"].map((d, i) => {
-                const vals = [1,1,1,0.5,1,0,0];
-                return (
-                  <div key={i} style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{
-                      height: 28, borderRadius: 6, marginBottom: 4,
-                      background: vals[i] === 1 ? "#14b8a6" : vals[i] === 0.5 ? "#99f6e4" : "#e2e8f0",
-                    }} />
-                    <span style={{ fontSize: 10, color: "#94a3b8" }}>{d}</span>
-                  </div>
-                );
-              })}
+          {/* AI Insight */}
+          <div style={{
+            background: "linear-gradient(135deg,#0b1c2c,#0d3347)",
+            borderRadius: 24, padding: "20px 22px",
+            border: "1px solid rgba(20,184,166,0.2)",
+            position: "relative", overflow: "hidden",
+          }}>
+            <div style={{ position: "absolute", right: -10, bottom: -20, width: 100, height: 100, borderRadius: "50%", background: "rgba(20,184,166,0.1)", pointerEvents: "none" }} />
+            <div style={{ display: "flex", gap: 10, alignItems: "flex-start", position: "relative", zIndex: 1 }}>
+              <span style={{ fontSize: 22, flexShrink: 0 }}>{AI_TIP.icon}</span>
+              <div>
+                <p style={{ fontSize: 10, color: "#2dd4bf", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", margin: "0 0 5px" }}>AI Insight</p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.65, margin: 0 }}>{AI_TIP.text}</p>
+              </div>
             </div>
           </div>
-        </Card>
+
+          {/* Meds mini */}
+          <Card style={{ flex: 1, padding: "20px 22px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 800, color: "#0f172a", margin: 0 }}>Today's Meds</h3>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#0d9488" }}>{takenCount}/{medList.length} done</span>
+            </div>
+            <div style={{ height: 5, background: "#f1f5f9", borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
+              <div style={{ height: "100%", width: `${adherePct}%`, background: "linear-gradient(90deg,#0d9488,#14b8a6)", borderRadius: 999, transition: "width 0.4s" }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+              {medList.map((m, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "10px 12px", borderRadius: 14,
+                  background: m.taken ? "#f0fdf4" : "#fafafa",
+                  border: `1px solid ${m.taken ? "#bbf7d0" : "#f1f5f9"}`,
+                }}>
+                  <span style={{ fontSize: 16 }}>💊</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a" }}>
+                      {m.name} <span style={{ color: "#94a3b8", fontWeight: 500 }}>{m.dose}</span>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#94a3b8", marginTop: 1 }}>🕒 {m.time}</div>
+                  </div>
+                  {m.taken
+                    ? <CheckCircle size={17} color="#16a34a" />
+                    : <button
+                        onClick={() => setMedList(prev => prev.map((x, j) => j === i ? { ...x, taken: true } : x))}
+                        style={{ background: "#14b8a6", color: "#fff", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                      >
+                        Take
+                      </button>
+                  }
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
 
-      {/* Bottom row: recent reports + activity */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-
-        {/* Recent reports */}
-        <Card>
-          <SectionHeader title="Recent Reports" action="All records" onAction={() => {}} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {REPORTS.map((r, i) => (
-              <div key={i} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "12px 14px", borderRadius: 14,
-                background: "#fafafa", border: "1px solid #f1f5f9",
-              }}>
-                <div style={{
-                  width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                  background: "#f0fdfa",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16,
-                }}>
-                  📄
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {r.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{r.date} · {r.size}</div>
-                </div>
-                <Badge color="gray">{r.type}</Badge>
-                <button style={{
-                  background: "none", border: "none", cursor: "pointer",
-                  color: "#0d9488", fontSize: 11, fontWeight: 600,
-                  flexShrink: 0,
-                }}>
-                  View
-                </button>
+      {/* Reports */}
+      <Card>
+        <SectionTitle title="Recent Reports" action="View all" onAction={() => setActiveTab("Records")} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+          {REPORTS.map((r, i) => (
+            <div key={i} style={{
+              padding: "16px", borderRadius: 18,
+              background: "#fafafa", border: "1px solid #f1f5f9",
+              cursor: "pointer", transition: "all 0.15s",
+            }}
+              onMouseEnter={e => { e.currentTarget.style.border = "1px solid rgba(20,184,166,0.3)"; e.currentTarget.style.background = "rgba(20,184,166,0.03)"; }}
+              onMouseLeave={e => { e.currentTarget.style.border = "1px solid #f1f5f9"; e.currentTarget.style.background = "#fafafa"; }}
+            >
+              <div style={{ fontSize: 26, marginBottom: 10 }}>{r.icon}</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 4, lineHeight: 1.4 }}>{r.name}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8" }}>{r.date}</div>
+              <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(20,184,166,0.1)", color: "#0d9488", padding: "2px 8px", borderRadius: 999 }}>{r.type}</span>
+                <span style={{ fontSize: 11, color: "#14b8a6", fontWeight: 600 }}>View →</span>
               </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Past visits */}
-        <Card>
-          <SectionHeader title="Past Visits" action="Full history" onAction={() => {}} />
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {PAST.map(a => (
-              <div key={a.id} style={{
-                display: "flex", alignItems: "center", gap: 12,
-                padding: "12px 14px", borderRadius: 14,
-                background: "#fafafa", border: "1px solid #f1f5f9",
-              }}>
-                <Avatar src={a.avatar} name={a.doctor} size={40} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{a.doctor}</div>
-                  <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 1 }}>{a.specialty} · {a.date}</div>
-                  <div style={{ fontSize: 11, color: "#0d9488", marginTop: 3, fontWeight: 500 }}>
-                    {a.diagnosis}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right", flexShrink: 0 }}>
-                  <div style={{ fontSize: 12, color: "#f59e0b" }}>
-                    {"⭐".repeat(a.rating)}
-                  </div>
-                  <button style={{
-                    marginTop: 6, background: "none", border: "1px solid #e2e8f0",
-                    borderRadius: 8, padding: "4px 10px", fontSize: 11,
-                    color: "#64748b", cursor: "pointer",
-                  }}>
-                    Report
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      </div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
 
-/* ── Appointments Tab ── */
-function AppointmentsTab({ navigate }) {
+/* ═══════════════════════════════════════
+   TAB: SYMPTOM CHECKER
+═══════════════════════════════════════ */
+function SymptomCheckerTab({ setActiveTab }) {
+  const [input,     setInput]     = useState("");
+  const [symptoms,  setSymptoms]  = useState(["Headache", "Fatigue"]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result,    setResult]    = useState(null);
+
+  const addSymptom = () => {
+    const trimmed = input.trim();
+    if (trimmed && !symptoms.includes(trimmed)) {
+      setSymptoms(prev => [...prev, trimmed]);
+      setInput("");
+    }
+  };
+
+  const removeSymptom = (s) => setSymptoms(prev => prev.filter(x => x !== s));
+
+  const analyze = () => {
+    if (symptoms.length === 0) return;
+    setAnalyzing(true);
+    setResult(null);
+    setTimeout(() => {
+      setAnalyzing(false);
+      setResult({
+        condition:    "Possible Tension Headache / Fatigue Syndrome",
+        confidence:   82,
+        urgency:      "Low",
+        urgencyColor: "green",
+        description:  "Your symptoms are consistent with tension-type headaches combined with fatigue. Rest, hydration, and stress management are recommended. Consider seeing a general physician if symptoms persist beyond 3 days.",
+        specialist:   "General Physician",
+      });
+    }, 2000);
+  };
+
+  return (
+    <div style={{ maxWidth: 600, margin: "0 auto" }}>
+      <Card>
+        {/* Header */}
+        <div style={{ marginBottom: 20 }}>
+          <h2 style={{ fontSize: 22, fontWeight: 800, color: "#0f172a", margin: "0 0 6px", fontFamily: "Georgia, serif" }}>AI Symptom Checker</h2>
+          <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>Powered by clinical AI · 94.7% accuracy across 2,847 conditions</p>
+        </div>
+
+        <label style={{ fontSize: 11, fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 8 }}>
+          Add Symptoms
+        </label>
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && addSymptom()}
+            placeholder="e.g. chest pain, dizziness…"
+            style={{ flex: 1, border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "10px 14px", fontSize: 13, outline: "none", fontFamily: "inherit" }}
+          />
+          <button
+            onClick={addSymptom}
+            style={{ background: "#14b8a6", color: "#fff", border: "none", borderRadius: 12, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+          >
+            Add
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20, minHeight: 36 }}>
+          {symptoms.map(s => (
+            <span key={s} style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(20,184,166,0.1)", color: "#0d9488", padding: "5px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600 }}>
+              <Check size={13} /> {s}
+              <button onClick={() => removeSymptom(s)} style={{ background: "none", border: "none", cursor: "pointer", color: "#14b8a6", display: "flex", alignItems: "center", marginLeft: 2, padding: 0 }}>
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+          {symptoms.length === 0 && (
+            <span style={{ fontSize: 13, color: "#94a3b8", fontStyle: "italic" }}>No symptoms added yet</span>
+          )}
+        </div>
+
+        {!result && (
+          <button
+            onClick={analyze}
+            disabled={symptoms.length === 0 || analyzing}
+            style={{
+              width: "100%", padding: "13px", borderRadius: 14,
+              background: "#0f172a", color: "#fff", fontWeight: 700, fontSize: 14,
+              border: "none", cursor: symptoms.length === 0 || analyzing ? "not-allowed" : "pointer",
+              opacity: symptoms.length === 0 || analyzing ? 0.4 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              fontFamily: "inherit", transition: "opacity 0.15s",
+            }}
+          >
+            {analyzing ? (
+              <>
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="3" strokeDasharray="40" strokeDashoffset="10" />
+                </svg>
+                Analyzing symptoms…
+              </>
+            ) : "⚡ Analyze Symptoms"}
+          </button>
+        )}
+
+        {result && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ background: "rgba(20,184,166,0.06)", borderRadius: 16, padding: "14px 16px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
+                <span style={{ color: "#64748b" }}>AI Confidence</span>
+                <span style={{ fontWeight: 700, color: "#0d9488" }}>{result.confidence}%</span>
+              </div>
+              <div style={{ height: 6, background: "rgba(20,184,166,0.15)", borderRadius: 999, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${result.confidence}%`, background: "linear-gradient(90deg,#0d9488,#14b8a6)", borderRadius: 999, transition: "width 0.7s" }} />
+              </div>
+            </div>
+
+            <div style={{ border: "1.5px solid #e2e8f0", borderRadius: 18, padding: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                <p style={{ fontWeight: 700, color: "#0f172a", fontSize: 15, margin: 0 }}>{result.condition}</p>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+                  background: result.urgencyColor === "green" ? "#dcfce7" : result.urgencyColor === "yellow" ? "#fef3c7" : "#fee2e2",
+                  color:      result.urgencyColor === "green" ? "#166534" : result.urgencyColor === "yellow" ? "#92400e" : "#991b1b",
+                }}>
+                  {result.urgency} urgency
+                </span>
+              </div>
+              <p style={{ fontSize: 13, color: "#64748b", lineHeight: 1.65, marginBottom: 16 }}>{result.description}</p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #f1f5f9" }}>
+                <span style={{ fontSize: 13, color: "#0d9488", fontWeight: 600 }}>Recommended: {result.specialist}</span>
+                <button
+                  onClick={() => setActiveTab("Doctors")}
+                  style={{ background: "#14b8a6", color: "#fff", border: "none", borderRadius: 11, padding: "8px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                >
+                  Book now →
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => { setResult(null); setSymptoms([]); }}
+              style={{ width: "100%", fontSize: 12, color: "#94a3b8", background: "none", border: "none", cursor: "pointer", padding: "6px", fontFamily: "inherit" }}
+            >
+              ← Start over
+            </button>
+          </div>
+        )}
+
+        <div style={{ marginTop: 20, padding: "12px 16px", background: "#f8fafc", borderRadius: 12, borderTop: "1px solid #f1f5f9" }}>
+          <p style={{ fontSize: 11, color: "#94a3b8", textAlign: "center", margin: 0 }}>
+            This tool provides informational guidance only and does not replace professional medical advice.
+          </p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
+   TAB: APPOINTMENTS
+═══════════════════════════════════════ */
+function Appointments({ setActiveTab }) {
   const [tab, setTab] = useState("upcoming");
-  const list = tab === "upcoming" ? UPCOMING : PAST;
 
   return (
     <Card>
-      <SectionHeader title="Appointments" action="+ Book new" onAction={() => navigate("/patient/doctors")} />
-      <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-        {["upcoming","past"].map(t => (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Appointments</h3>
+        <button onClick={() => setActiveTab("Doctors")} style={{
+          background: "#0d9488", color: "#fff", border: "none", borderRadius: 12,
+          padding: "9px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 6,
+          boxShadow: "0 4px 14px rgba(13,148,136,0.3)", fontFamily: "inherit",
+        }}>
+          <Plus size={14} /> Book New
+        </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 22, background: "#f8fafc", borderRadius: 14, padding: 4, width: "fit-content", border: "1px solid #f1f5f9" }}>
+        {["upcoming", "past"].map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
-            padding: "7px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600,
-            border: "none", cursor: "pointer",
-            background: tab === t ? "#0d9488" : "#f1f5f9",
-            color: tab === t ? "#fff" : "#64748b",
+            padding: "8px 22px", borderRadius: 10, fontSize: 13, fontWeight: 700,
+            border: "none", cursor: "pointer", transition: "all 0.15s",
+            background: tab === t ? "#fff" : "transparent",
+            color: tab === t ? "#0f172a" : "#94a3b8",
+            boxShadow: tab === t ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
+            fontFamily: "inherit", textTransform: "capitalize",
           }}>
             {t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {list.map(a => (
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {(tab === "upcoming" ? UPCOMING : PAST_VISITS).map(a => (
           <div key={a.id} style={{
             display: "flex", alignItems: "center", gap: 16,
-            padding: "18px 20px", borderRadius: 16,
-            background: "#fafafa", border: "1px solid #f1f5f9",
-          }}>
-            <Avatar src={a.avatar} name={a.doctor} size={52} />
+            padding: "18px 22px", borderRadius: 20,
+            background: "#fafafa", border: "1.5px solid #f1f5f9",
+            transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.border = "1.5px solid rgba(20,184,166,0.2)"; e.currentTarget.style.background = "rgba(20,184,166,0.02)"; }}
+            onMouseLeave={e => { e.currentTarget.style.border = "1.5px solid #f1f5f9"; e.currentTarget.style.background = "#fafafa"; }}
+          >
+            <img src={a.avatar} alt="" style={{ width: 54, height: 54, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{a.doctor}</div>
               <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{a.specialty}</div>
-              <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
-                <Badge color="gray">📅 {a.date} · {a.time}</Badge>
-                {"mode" in a && <Badge color={a.mode === "Video" ? "blue" : "gray"}>{a.mode === "Video" ? "📹" : "🏥"} {a.mode}</Badge>}
-                {"status" in a && <Badge color={a.status === "confirmed" ? "green" : "amber"}>{a.status}</Badge>}
-                {"diagnosis" in a && <Badge color="teal">{a.diagnosis}</Badge>}
+              <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 11, fontWeight: 600, background: "#f1f5f9", color: "#64748b", padding: "4px 12px", borderRadius: 999 }}>
+                  📅 {a.date} · {a.time}
+                </span>
+                {"mode" in a && (
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "4px 12px", borderRadius: 999, background: a.mode === "Video" ? "rgba(59,130,246,0.1)" : "#f1f5f9", color: a.mode === "Video" ? "#3b82f6" : "#64748b" }}>
+                    {a.mode === "Video" ? "📹" : "🏥"} {a.mode}
+                  </span>
+                )}
+                {"diagnosis" in a && (
+                  <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(20,184,166,0.1)", color: "#0d9488", padding: "4px 12px", borderRadius: 999 }}>
+                    {a.diagnosis}
+                  </span>
+                )}
+                {"rating" in a && (
+                  <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(245,158,11,0.1)", color: "#d97706", padding: "4px 12px", borderRadius: 999 }}>
+                    {"⭐".repeat(a.rating)}
+                  </span>
+                )}
               </div>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
               {tab === "upcoming" && a.date === "Today" && (
-                <button style={{
-                  background: "#0d9488", color: "#fff", border: "none",
-                  borderRadius: 10, padding: "9px 18px", fontSize: 12,
-                  fontWeight: 600, cursor: "pointer",
-                }}>
+                <button style={{ background: "#14b8a6", color: "#fff", border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(20,184,166,0.3)", fontFamily: "inherit" }}>
                   Join Call
                 </button>
               )}
-              <button style={{
-                background: "none", color: "#64748b", border: "1px solid #e2e8f0",
-                borderRadius: 10, padding: "9px 16px", fontSize: 12,
-                fontWeight: 500, cursor: "pointer",
-              }}>
+              <button style={{ background: "none", border: "1.5px solid #e2e8f0", color: "#64748b", borderRadius: 12, padding: "10px 18px", fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>
                 {tab === "upcoming" ? "Reschedule" : "Book again"}
               </button>
             </div>
@@ -643,351 +679,432 @@ function AppointmentsTab({ navigate }) {
   );
 }
 
-/* ── Records Tab ── */
-function RecordsTab() {
+/* ═══════════════════════════════════════
+   TAB: MEDICATIONS
+═══════════════════════════════════════ */
+function Medications() {
+  const [meds, setMeds] = useState(INIT_MEDS);
+  const taken = meds.filter(m => m.taken).length;
+
   return (
     <Card>
-      <SectionHeader title="Health Records" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {REPORTS.map((r, i) => (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Medications</h3>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#0d9488" }}>{taken}/{meds.length} taken today</span>
+      </div>
+      <div style={{ height: 6, background: "#f1f5f9", borderRadius: 999, overflow: "hidden", marginBottom: 24 }}>
+        <div style={{ height: "100%", width: `${(taken / meds.length) * 100}%`, background: "linear-gradient(90deg,#0d9488,#14b8a6)", borderRadius: 999, transition: "width 0.4s" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {meds.map((m, i) => (
           <div key={i} style={{
-            display: "flex", alignItems: "center", gap: 16,
-            padding: "16px 20px", borderRadius: 16,
-            background: "#fafafa", border: "1px solid #f1f5f9",
+            display: "flex", alignItems: "center", gap: 18,
+            padding: "20px 24px", borderRadius: 20,
+            background: m.taken ? "#f0fdf4" : "#fafafa",
+            border: `1.5px solid ${m.taken ? "#bbf7d0" : "#f1f5f9"}`,
+            transition: "all 0.2s",
           }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 14,
-              background: "#f0fdfa", display: "flex",
-              alignItems: "center", justifyContent: "center",
-              fontSize: 22, flexShrink: 0,
-            }}>
-              📄
+            <div style={{ width: 52, height: 52, borderRadius: 16, flexShrink: 0, background: m.taken ? "#dcfce7" : "rgba(20,184,166,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
+              💊
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#0f172a" }}>{r.name}</div>
-              <div style={{ fontSize: 12, color: "#94a3b8", marginTop: 3 }}>{r.date} · {r.size}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "#0f172a" }}>{m.name}</div>
+              <div style={{ fontSize: 12, color: "#64748b", marginTop: 3 }}>{m.dose} · {m.freq}</div>
+              <div style={{ fontSize: 12, color: "#0d9488", marginTop: 5, fontWeight: 600 }}>🕒 Next: {m.time}</div>
             </div>
-            <Badge color="teal">{r.type}</Badge>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button style={{
-                background: "#0d9488", color: "#fff", border: "none",
-                borderRadius: 10, padding: "8px 16px", fontSize: 12,
-                fontWeight: 600, cursor: "pointer",
-              }}>
-                View
-              </button>
-              <button style={{
-                background: "none", border: "1px solid #e2e8f0", color: "#64748b",
-                borderRadius: 10, padding: "8px 16px", fontSize: 12,
-                fontWeight: 500, cursor: "pointer",
-              }}>
-                Download
-              </button>
-            </div>
+            {m.taken
+              ? <div style={{ display: "flex", alignItems: "center", gap: 7, color: "#16a34a" }}>
+                  <CheckCircle size={22} /><span style={{ fontSize: 13, fontWeight: 700 }}>Taken</span>
+                </div>
+              : <button
+                  onClick={() => setMeds(p => p.map((x, j) => j === i ? { ...x, taken: true } : x))}
+                  style={{ background: "#0d9488", color: "#fff", border: "none", borderRadius: 12, padding: "10px 22px", fontSize: 13, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 14px rgba(13,148,136,0.3)", fontFamily: "inherit" }}
+                >
+                  Mark taken
+                </button>
+            }
           </div>
         ))}
       </div>
-      <button style={{
-        marginTop: 16, width: "100%", padding: "12px",
-        borderRadius: 12, border: "1.5px dashed #99f6e4",
-        background: "transparent", color: "#0d9488",
-        fontSize: 13, fontWeight: 600, cursor: "pointer",
-        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-      }}>
-        <Plus size={15} /> Upload New Record
-      </button>
     </Card>
   );
 }
 
-/* ── Medications Tab ── */
-function MedicationsTab() {
-  const [meds, setMeds] = useState(MEDICATIONS);
-  const markTaken = (i) => setMeds(prev => prev.map((m, idx) => idx === i ? { ...m, status: "taken" } : m));
+/* ═══════════════════════════════════════
+   TAB: RECORDS
+═══════════════════════════════════════ */
+const ALL_REPORTS = [
+  ...REPORTS,
+  { name: "Blood Panel (March)",     date: "Mar 10", type: "Lab",    icon: "🧪" },
+  { name: "Follow-up Consultation",  date: "Mar 10", type: "Report", icon: "📋" },
+];
+
+function Records() {
   return (
     <Card>
-      <SectionHeader title="Medications" />
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {meds.map((m, i) => (
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>Health Records</h3>
+        <button style={{ background: "#0d9488", color: "#fff", border: "none", borderRadius: 12, padding: "9px 18px", fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, boxShadow: "0 4px 14px rgba(13,148,136,0.3)", fontFamily: "inherit" }}>
+          <Plus size={14} /> Upload
+        </button>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 14 }}>
+        {ALL_REPORTS.map((r, i) => (
           <div key={i} style={{
-            display: "flex", alignItems: "center", gap: 16,
-            padding: "18px 20px", borderRadius: 16,
-            background: m.status === "taken" ? "#f0fdf4" : "#fafafa",
-            border: `1px solid ${m.status === "taken" ? "#bbf7d0" : "#f1f5f9"}`,
-          }}>
-            <div style={{
-              width: 48, height: 48, borderRadius: 14, flexShrink: 0,
-              background: m.status === "taken" ? "#dcfce7" : "#f0fdfa",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 22,
-            }}>💊</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#0f172a" }}>{m.name}</div>
-              <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{m.dose} · {m.freq}</div>
-              <div style={{ fontSize: 12, color: "#0d9488", marginTop: 4, fontWeight: 500 }}>
-                🕒 Next dose: {m.next}
-              </div>
+            display: "flex", alignItems: "center", gap: 14,
+            padding: "18px 20px", borderRadius: 18,
+            background: "#fafafa", border: "1.5px solid #f1f5f9",
+            transition: "all 0.15s", cursor: "pointer",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.border = "1.5px solid rgba(20,184,166,0.25)"; e.currentTarget.style.background = "rgba(20,184,166,0.02)"; }}
+            onMouseLeave={e => { e.currentTarget.style.border = "1.5px solid #f1f5f9"; e.currentTarget.style.background = "#fafafa"; }}
+          >
+            <div style={{ width: 48, height: 48, borderRadius: 14, background: "rgba(20,184,166,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+              {r.icon}
             </div>
-            {m.status === "taken" ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#16a34a" }}>
-                <CheckCircle size={20} />
-                <span style={{ fontSize: 12, fontWeight: 600 }}>Taken</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.name}</div>
+              <div style={{ fontSize: 11, color: "#94a3b8", marginTop: 2 }}>{r.date}</div>
+              <span style={{ fontSize: 10, fontWeight: 700, background: "rgba(20,184,166,0.1)", color: "#0d9488", padding: "2px 8px", borderRadius: 999, marginTop: 5, display: "inline-block" }}>
+                {r.type}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+              <button style={{ background: "#0d9488", color: "#fff", border: "none", borderRadius: 9, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>View</button>
+              <button style={{ background: "none", border: "1px solid #e2e8f0", color: "#64748b", borderRadius: 9, padding: "6px 14px", fontSize: 11, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}>Download</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════
+   TAB: DOCTORS
+═══════════════════════════════════════ */
+function DoctorsTab() {
+  const [filter, setFilter]   = useState("All");
+  const [booked, setBooked]   = useState(null);
+  const [search, setSearch]   = useState("");
+
+  const filtered = ALL_DOCTORS.filter(d => {
+    const matchesFilter = filter === "All" || d.specialty === filter;
+    const matchesSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
+                          d.specialty.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  return (
+    <Card>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+        <div>
+          <h3 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: "0 0 4px" }}>Find a Doctor</h3>
+          <p style={{ fontSize: 13, color: "#94a3b8", margin: 0 }}>12,400+ verified specialists · Real-time availability</p>
+        </div>
+        <div style={{ position: "relative" }}>
+          <Search size={13} style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
+          <input
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search doctors…"
+            style={{ paddingLeft: 30, paddingRight: 14, paddingTop: 9, paddingBottom: 9, border: "1.5px solid #e2e8f0", borderRadius: 12, fontSize: 12, color: "#374151", background: "#fff", width: 200, fontFamily: "inherit", outline: "none" }}
+          />
+        </div>
+      </div>
+
+      {/* Specialty filters */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+        {SPECIALTIES.map(s => (
+          <button key={s} onClick={() => setFilter(s)} style={{
+            padding: "7px 16px", borderRadius: 999, fontSize: 12, fontWeight: 600,
+            border: "none", cursor: "pointer", transition: "all 0.15s",
+            background: filter === s ? "#14b8a6" : "#f1f5f9",
+            color: filter === s ? "#fff" : "#64748b",
+            fontFamily: "inherit",
+          }}>
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {filtered.map(doc => (
+          <div key={doc.name} style={{
+            display: "flex", alignItems: "center", gap: 16,
+            padding: "18px 22px", borderRadius: 20,
+            background: "#fafafa", border: "1.5px solid #f1f5f9",
+            transition: "all 0.15s",
+          }}
+            onMouseEnter={e => { e.currentTarget.style.border = "1.5px solid rgba(20,184,166,0.2)"; e.currentTarget.style.background = "rgba(20,184,166,0.02)"; }}
+            onMouseLeave={e => { e.currentTarget.style.border = "1.5px solid #f1f5f9"; e.currentTarget.style.background = "#fafafa"; }}
+          >
+            <img src={doc.img} alt={doc.name} style={{ width: 56, height: 56, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#0f172a" }}>{doc.name}</span>
+                <span style={{ fontSize: 11, fontWeight: 600, background: "rgba(20,184,166,0.1)", color: "#0d9488", padding: "2px 8px", borderRadius: 999 }}>{doc.specialty}</span>
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 5, fontSize: 12, color: "#64748b", flexWrap: "wrap" }}>
+                <span style={{ color: "#f59e0b" }}>⭐ {doc.rating}</span>
+                <span>({doc.reviews} reviews)</span>
+                <span>· {doc.exp} exp</span>
+                <span>· {doc.fee}/visit</span>
+              </div>
+              <p style={{ fontSize: 12, color: "#14b8a6", marginTop: 5, fontWeight: 600, margin: "5px 0 0" }}>🕒 {doc.next}</p>
+            </div>
+            {booked === doc.name ? (
+              <span style={{ fontSize: 12, fontWeight: 700, background: "#dcfce7", color: "#16a34a", padding: "8px 14px", borderRadius: 12, flexShrink: 0 }}>
+                ✓ Booked!
+              </span>
             ) : (
-              <button onClick={() => markTaken(i)} style={{
-                background: "#0d9488", color: "#fff", border: "none",
-                borderRadius: 10, padding: "9px 18px", fontSize: 12,
-                fontWeight: 600, cursor: "pointer",
-              }}>
-                Mark taken
+              <button
+                onClick={() => setBooked(doc.name)}
+                style={{ flexShrink: 0, background: "#0f172a", color: "#fff", border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer", transition: "background 0.15s", fontFamily: "inherit" }}
+                onMouseEnter={e => e.currentTarget.style.background = "#14b8a6"}
+                onMouseLeave={e => e.currentTarget.style.background = "#0f172a"}
+              >
+                Book Now
               </button>
             )}
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div style={{ textAlign: "center", padding: "32px 0", color: "#94a3b8" }}>
+            <div style={{ fontSize: 32, marginBottom: 10 }}>🔍</div>
+            <p style={{ fontSize: 14, fontWeight: 600 }}>No doctors found</p>
+            <p style={{ fontSize: 12 }}>Try adjusting your search or filter</p>
+          </div>
+        )}
       </div>
     </Card>
   );
 }
 
-/* ── Settings Tab ── */
+/* ═══════════════════════════════════════
+   TAB: SETTINGS
+═══════════════════════════════════════ */
 function SettingsTab() {
-  const [form, setForm] = useState({ name: PATIENT.name, email: "alex.johnson@email.com", phone: "+1 (555) 012-3456", dob: "1990-06-14" });
+  const savedName  = localStorage.getItem("user_name")  || "Alex Johnson";
+  const savedEmail = localStorage.getItem("user_email") || "alex.johnson@email.com";
+
+  const [form, setForm] = useState({
+    name:  savedName,
+    email: savedEmail,
+    phone: "+1 (555) 012-3456",
+    dob:   "1990-06-14",
+  });
   const [saved, setSaved] = useState(false);
-  const save = () => { setSaved(true); setTimeout(() => setSaved(false), 2000); };
+  const [notifs, setNotifs] = useState({
+    appointments: true,
+    medications:  true,
+    insights:     true,
+    promo:        false,
+  });
+
+  const save = () => {
+    localStorage.setItem("user_name", form.name);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       <Card>
-        <SectionHeader title="Personal Information" />
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: "0 0 22px" }}>Personal Information</h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-          {[["Full Name","name","text"],["Email","email","email"],["Phone","phone","tel"],["Date of Birth","dob","date"]].map(([label, key, type]) => (
+          {[
+            ["Full Name",    "name",  "text"],
+            ["Email",        "email", "email"],
+            ["Phone",        "phone", "tel"],
+            ["Date of Birth","dob",   "date"],
+          ].map(([label, key, type]) => (
             <div key={key}>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 7 }}>{label}</label>
               <input
                 type={type}
                 value={form[key]}
                 onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))}
-                style={{
-                  width: "100%", padding: "10px 14px", border: "1.5px solid #e5e7eb",
-                  borderRadius: 12, fontSize: 13, color: "#111827",
-                  outline: "none", boxSizing: "border-box",
-                }}
+                style={{ width: "100%", padding: "11px 15px", border: "1.5px solid #e5e7eb", borderRadius: 13, fontSize: 13, color: "#111827", outline: "none", boxSizing: "border-box", fontFamily: "inherit", transition: "border-color 0.15s" }}
               />
             </div>
           ))}
         </div>
         <button onClick={save} style={{
-          marginTop: 20, background: saved ? "#16a34a" : "#0d9488", color: "#fff",
-          border: "none", borderRadius: 12, padding: "11px 28px",
-          fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "background 0.2s",
+          marginTop: 22,
+          background: saved ? "#16a34a" : "#0d9488",
+          color: "#fff", border: "none", borderRadius: 13,
+          padding: "12px 30px", fontSize: 13, fontWeight: 700,
+          cursor: "pointer", fontFamily: "inherit",
+          boxShadow: saved ? "0 4px 14px rgba(22,163,74,0.3)" : "0 4px 14px rgba(13,148,136,0.3)",
+          transition: "all 0.2s",
         }}>
           {saved ? "✓ Saved!" : "Save Changes"}
         </button>
       </Card>
 
       <Card>
-        <SectionHeader title="Notifications" />
-        {[
-          ["Appointment reminders", true],
-          ["Medication alerts", true],
-          ["AI health insights", true],
-          ["Promotional emails", false],
-        ].map(([label, def]) => {
-          const [on, setOn] = useState(def);
-          return (
-            <div key={label} style={{
-              display: "flex", justifyContent: "space-between", alignItems: "center",
-              padding: "14px 0", borderBottom: "1px solid #f8fafc",
-            }}>
-              <span style={{ fontSize: 13, color: "#374151" }}>{label}</span>
-              <button onClick={() => setOn(!on)} style={{
-                width: 44, height: 24, borderRadius: 999, border: "none", cursor: "pointer",
-                background: on ? "#14b8a6" : "#e2e8f0",
-                position: "relative", transition: "background 0.2s",
-              }}>
-                <div style={{
-                  width: 18, height: 18, borderRadius: "50%", background: "#fff",
-                  position: "absolute", top: 3, transition: "left 0.2s",
-                  left: on ? 23 : 3,
-                }} />
-              </button>
-            </div>
-          );
-        })}
+        <h3 style={{ fontSize: 16, fontWeight: 800, color: "#0f172a", margin: "0 0 18px" }}>Notifications</h3>
+        {NOTIF_ITEMS.map(({ key, label }) => (
+          <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 0", borderBottom: "1px solid #f8fafc" }}>
+            <span style={{ fontSize: 13, color: "#374151", fontWeight: 500 }}>{label}</span>
+            <button
+              onClick={() => setNotifs(p => ({ ...p, [key]: !p[key] }))}
+              style={{ width: 46, height: 26, borderRadius: 999, border: "none", cursor: "pointer", background: notifs[key] ? "#14b8a6" : "#e2e8f0", position: "relative", transition: "background 0.2s" }}
+            >
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: notifs[key] ? 23 : 3, transition: "left 0.2s", boxShadow: "0 1px 4px rgba(0,0,0,0.15)" }} />
+            </button>
+          </div>
+        ))}
       </Card>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────────
-   MAIN COMPONENT
-───────────────────────────────────────────── */
-export default function PatientDashboard() {
+/* ═══════════════════════════════════════
+   MAIN EXPORT
+═══════════════════════════════════════ */
+export default function PatientDashboard({ initialTab = "Overview" }) {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav]         = useState("dashboard");
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery]     = useState("");
-  const unreadCount = NOTIFICATIONS.filter(n => !n.read).length;
 
-  // Guard: if no token, redirect to /login
+  const [activeTab,  setActiveTab]  = useState(initialTab);
+  const [showNotifs, setShowNotifs] = useState(false);
+  const [search,     setSearch]     = useState("");
+
+  const patientName = localStorage.getItem("user_name") || "Alex Johnson";
+  const unread      = NOTIFICATIONS.filter(n => !n.read).length;
+
+  // Auth guard
   useEffect(() => {
-    if (!localStorage.getItem("token")) navigate("/login");
-  }, []);
+    if (!localStorage.getItem("token")) navigate("/auth");
+  }, [navigate]);
+
+  // Sync tab when initialTab prop changes (e.g. via URL param)
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/login");
+    localStorage.removeItem("user_name");
+    localStorage.removeItem("user_role");
+    localStorage.removeItem("user_email");
+    navigate("/");
   };
 
-  const handleNav = (id) => {
-    if (id === "symptoms") { navigate("/patient/symptom-checker"); return; }
-    if (id === "doctors")  { navigate("/patient/doctors");         return; }
-    setActiveNav(id);
-  };
-
-  const sideWidth = sidebarCollapsed ? 72 : 240;
-
-  const renderContent = () => {
-    switch (activeNav) {
-      case "dashboard":    return <OverviewTab navigate={navigate} />;
-      case "appointments": return <AppointmentsTab navigate={navigate} />;
-      case "records":      return <RecordsTab />;
-      case "medications":  return <MedicationsTab />;
-      case "settings":     return <SettingsTab />;
-      default:             return <OverviewTab navigate={navigate} />;
+  const renderTab = () => {
+    switch (activeTab) {
+      case "Overview":        return <Overview          navigate={navigate} setActiveTab={setActiveTab} />;
+      case "Symptom Checker": return <SymptomCheckerTab setActiveTab={setActiveTab} />;
+      case "Appointments":    return <Appointments      setActiveTab={setActiveTab} />;
+      case "Medications":     return <Medications />;
+      case "Records":         return <Records />;
+      case "Doctors":         return <DoctorsTab />;
+      case "Settings":        return <SettingsTab />;
+      default:                return <Overview          navigate={navigate} setActiveTab={setActiveTab} />;
     }
   };
 
-  const PAGE_TITLES = {
-    dashboard:    "Dashboard",
-    appointments: "Appointments",
-    records:      "Health Records",
-    medications:  "Medications",
-    settings:     "Settings",
-  };
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f8fafc", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "'Manrope', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
+        @import url('${FONT_LINK}');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #f8fafc; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
-        input:focus { border-color: #14b8a6 !important; box-shadow: 0 0 0 3px rgba(20,184,166,0.1); }
+        input:focus {
+          border-color: #14b8a6 !important;
+          box-shadow: 0 0 0 3px rgba(20,184,166,0.12) !important;
+          outline: none !important;
+        }
       `}</style>
 
-      {/* Sidebar */}
-      <Sidebar
-        active={activeNav}
-        onNav={handleNav}
-        collapsed={sidebarCollapsed}
-        onToggle={() => setSidebarCollapsed(v => !v)}
-        onLogout={handleLogout}
-      />
-
-      {/* Main area */}
-      <div style={{
-        marginLeft: sideWidth, flex: 1, display: "flex", flexDirection: "column",
-        minHeight: "100vh", transition: "margin-left 0.25s cubic-bezier(0.4,0,0.2,1)",
+      {/* ══════════ TOP NAVBAR ══════════ */}
+      <header style={{
+        position: "sticky", top: 0, zIndex: 50,
+        background: "rgba(255,255,255,0.88)",
+        backdropFilter: "blur(16px)",
+        WebkitBackdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(241,245,249,0.9)",
+        padding: "0 40px", height: 66,
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20,
       }}>
 
-        {/* Top bar */}
-        <header style={{
-          position: "sticky", top: 0, zIndex: 40,
-          background: "rgba(248,250,252,0.95)",
-          backdropFilter: "blur(8px)",
-          borderBottom: "1px solid #f1f5f9",
-          padding: "0 32px",
-          height: 64,
-          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20,
-        }}>
-          {/* Page title + breadcrumb */}
-          <div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: "#0f172a", margin: 0 }}>
-              {PAGE_TITLES[activeNav] || "Dashboard"}
-            </h2>
-            <p style={{ fontSize: 11, color: "#94a3b8", margin: 0 }}>
-              {activeNav === "dashboard" ? `Good ${new Date().getHours() < 12 ? "morning" : "afternoon"}, ${PATIENT.name.split(" ")[0]} 👋` : `MediSmartAI / ${PAGE_TITLES[activeNav]}`}
-            </p>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 11, background: "linear-gradient(135deg,#0d9488,#14b8a6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Check size={17} color="white" strokeWidth={3} />
+          </div>
+          <span style={{ fontSize: 17, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.3px" }}>
+            MediSmart<span style={{ color: "#14b8a6" }}>AI</span>
+          </span>
+        </div>
+
+        {/* Nav tabs */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, background: "#f8fafc", borderRadius: 16, padding: 5, border: "1px solid #f1f5f9", overflowX: "auto" }}>
+          {TABS.map(tab => (
+            <NavPill key={tab} active={activeTab === tab} onClick={() => setActiveTab(tab)}>
+              {tab}
+            </NavPill>
+          ))}
+        </div>
+
+        {/* Right side */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+
+          {/* Search */}
+          <div style={{ position: "relative" }}>
+            <Search size={13} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8", pointerEvents: "none" }} />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search…"
+              style={{ paddingLeft: 32, paddingRight: 14, paddingTop: 9, paddingBottom: 9, border: "1.5px solid #e2e8f0", borderRadius: 12, fontSize: 12, color: "#374151", background: "#fff", width: 180, fontFamily: "inherit" }}
+            />
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {/* Search */}
-            <div style={{ position: "relative" }}>
-              <Search size={14} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#94a3b8" }} />
-              <input
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search records, doctors…"
-                style={{
-                  paddingLeft: 34, paddingRight: 14, paddingTop: 9, paddingBottom: 9,
-                  border: "1.5px solid #e2e8f0", borderRadius: 12,
-                  fontSize: 12, color: "#374151", outline: "none",
-                  background: "#fff", width: 220,
-                }}
-              />
-            </div>
+          {/* Bell */}
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setShowNotifs(v => !v)} style={{ width: 40, height: 40, borderRadius: 12, background: "#fff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+              <Bell size={16} color="#64748b" />
+              {unread > 0 && (
+                <span style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, borderRadius: "50%", background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #f8fafc" }}>
+                  {unread}
+                </span>
+              )}
+            </button>
+            {showNotifs && <NotifDropdown onClose={() => setShowNotifs(false)} />}
+          </div>
 
-            {/* Notifications */}
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={() => setShowNotifications(v => !v)}
-                style={{
-                  width: 40, height: 40, borderRadius: 12,
-                  background: "#fff", border: "1.5px solid #e2e8f0",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  cursor: "pointer", position: "relative",
-                }}
-              >
-                <Bell size={17} color="#64748b" />
-                {unreadCount > 0 && (
-                  <span style={{
-                    position: "absolute", top: -4, right: -4,
-                    width: 18, height: 18, borderRadius: "50%",
-                    background: "#ef4444", color: "#fff",
-                    fontSize: 10, fontWeight: 700,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    border: "2px solid #f8fafc",
-                  }}>
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-              {showNotifications && <NotificationPanel onClose={() => setShowNotifications(false)} />}
+          {/* Profile */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => setActiveTab("Settings")}>
+            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "linear-gradient(135deg,#0d9488,#14b8a6)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", border: "2px solid #e2e8f0" }}>
+              {patientName.charAt(0).toUpperCase()}
             </div>
-
-            {/* Profile */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
-              onClick={() => setActiveNav("settings")}>
-              <Avatar src={PATIENT.avatar} name={PATIENT.name} size={36} />
-              <div style={{ display: "none" }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>{PATIENT.name}</div>
-                <div style={{ fontSize: 11, color: "#94a3b8" }}>{PATIENT.plan} Plan</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a", lineHeight: 1.2 }}>{PATIENT.name}</div>
-                <div style={{ fontSize: 11, color: "#0d9488", fontWeight: 600 }}>{PATIENT.plan} Plan</div>
-              </div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#0f172a", lineHeight: 1.2 }}>{patientName.split(" ")[0]}</div>
+              <div style={{ fontSize: 11, color: "#14b8a6", fontWeight: 700 }}>Pro Plan</div>
             </div>
           </div>
-        </header>
 
-        {/* Page content */}
-        <main style={{ flex: 1, padding: "28px 32px", overflowY: "auto" }}>
-          {renderContent()}
-        </main>
-      </div>
+          {/* Logout */}
+          <button
+            onClick={handleLogout}
+            title="Log out"
+            style={{ width: 36, height: 36, borderRadius: 10, background: "#fff", border: "1.5px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#94a3b8", transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "#fef2f2"; e.currentTarget.style.borderColor = "#fca5a5"; e.currentTarget.style.color = "#ef4444"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "#fff";    e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.color = "#94a3b8"; }}
+          >
+            <LogOut size={15} />
+          </button>
+        </div>
+      </header>
 
-      {/* Close notifications on outside click */}
-      {showNotifications && (
-        <div
-          onClick={() => setShowNotifications(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 39 }}
-        />
-      )}
+      {/* ══════════ PAGE CONTENT ══════════ */}
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 40px 60px" }}>
+        {renderTab()}
+      </main>
     </div>
   );
 }
