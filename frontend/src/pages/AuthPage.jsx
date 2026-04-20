@@ -23,20 +23,26 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
-  /* ── Auth handler ─────────────────────────────── */
+  /* ── Auth handler ────────────────────────────
+     After success:
+       - stores token, user_name, user_role in localStorage
+       - navigates to /dashboard
+       - App.jsx RoleRoute reads user_role and redirects to:
+           Doctor  → /doctor/dashboard
+           Patient → /patient/dashboard
+  ─────────────────────────────────────────── */
   const handleSubmit = () => {
     setError("");
 
-    // Basic validation
     if (!email || !password) {
       setError("Please fill in all required fields.");
       return;
     }
     if (mode === "signup") {
-      if (!fullName) { setError("Please enter your full name."); return; }
-      if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
-      if (password !== confirm) { setError("Passwords do not match."); return; }
-      if (!agreed) { setError("Please agree to the Terms of Service and Privacy Policy."); return; }
+      if (!fullName)          { setError("Please enter your full name."); return; }
+      if (password.length < 8){ setError("Password must be at least 8 characters."); return; }
+      if (password !== confirm){ setError("Passwords do not match."); return; }
+      if (!agreed)            { setError("Please agree to the Terms of Service and Privacy Policy."); return; }
       if (role === "Doctor" && (!specialty || !license)) {
         setError("Please enter your specialty and medical license number.");
         return;
@@ -47,27 +53,31 @@ export default function AuthPage() {
 
     // Simulate API call — replace with real auth logic
     setTimeout(() => {
-      // Store auth token & user info
-      localStorage.setItem("token",     "demo_token");
-      localStorage.setItem("user_name", fullName || email.split("@")[0]);
-      localStorage.setItem("user_role", role);
+      // Persist auth info
+      localStorage.setItem("token",      "demo_token");
+      localStorage.setItem("user_name",  fullName || email.split("@")[0]);
+      localStorage.setItem("user_role",  role);               // "Patient" | "Doctor"
       localStorage.setItem("user_email", email);
+      if (role === "Doctor") {
+        localStorage.setItem("user_specialty", specialty || "General Physician");
+        localStorage.setItem("user_license",   license  || "MD-0000000");
+      }
 
       setLoading(false);
 
-      // Always route to patient dashboard after auth
-      navigate("/patient/dashboard");
+      // Navigate to /dashboard — App.jsx RoleRoute handles the split
+      navigate("/dashboard");
     }, 900);
   };
 
   const handleKeyDown = (e) => { if (e.key === "Enter") handleSubmit(); };
 
-  /* ── Social OAuth (demo) ──────────────────────── */
+  /* ── Social OAuth (demo) ─────────────────── */
   const handleSocialAuth = (provider) => {
     localStorage.setItem("token",     `${provider}_token`);
     localStorage.setItem("user_name", provider === "google" ? "Google User" : "Apple User");
-    localStorage.setItem("user_role", "Patient");
-    navigate("/patient/dashboard");
+    localStorage.setItem("user_role", role);   // keeps whichever role tab is selected
+    navigate("/dashboard");
   };
 
   return (
@@ -87,7 +97,7 @@ export default function AuthPage() {
 
       <div className="auth-root" style={{ minHeight: "100vh", display: "flex", background: "#F5F7FA" }}>
 
-        {/* ══════════ LEFT PANEL ══════════ */}
+        {/* ══ LEFT PANEL ══ */}
         <div className="hidden lg:flex" style={{ width: "50%", position: "relative", overflow: "hidden", flexShrink: 0 }}>
           <img
             src="https://img.rocket.new/generatedImages/rocket_gen_img_122893eee-1768046466635.png"
@@ -95,13 +105,9 @@ export default function AuthPage() {
             alt="hospital"
           />
           <div style={{ position: "absolute", inset: 0, background: "rgba(8,22,38,0.58)" }} />
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg, rgba(8,22,38,0.48) 0%, rgba(8,22,38,0.22) 65%, rgba(8,22,38,0.04) 100%)" }} />
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,rgba(8,22,38,0.48) 0%,rgba(8,22,38,0.22) 65%,rgba(8,22,38,0.04) 100%)" }} />
 
-          <div style={{
-            position: "relative", zIndex: 10,
-            display: "flex", flexDirection: "column", justifyContent: "space-between",
-            padding: "56px", color: "#fff", width: "100%",
-          }}>
+          <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "56px", color: "#fff", width: "100%" }}>
             {/* Logo */}
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#0d9488,#14b8a6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -115,7 +121,7 @@ export default function AuthPage() {
               </span>
             </div>
 
-            {/* Hero text */}
+            {/* Hero */}
             <div>
               <h2 className="heading-serif" style={{ fontSize: 44, lineHeight: 1.15, margin: "0 0 16px", fontWeight: 700 }}>
                 Healthcare that<br />
@@ -134,7 +140,7 @@ export default function AuthPage() {
               </div>
             </div>
 
-            {/* Badges */}
+            {/* Compliance badges */}
             <div style={{ display: "flex", gap: 24, fontSize: 12, color: "#94a3b8" }}>
               {["HIPAA Compliant","256-bit Encryption"].map(txt => (
                 <span key={txt} style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -148,7 +154,7 @@ export default function AuthPage() {
           </div>
         </div>
 
-        {/* ══════════ RIGHT PANEL ══════════ */}
+        {/* ══ RIGHT PANEL ══ */}
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 32px", background: "#ffffff", overflowY: "auto" }}>
           <div style={{ width: "100%", maxWidth: 400 }}>
 
@@ -157,8 +163,7 @@ export default function AuthPage() {
               {[["login","Log In"],["signup","Sign Up"]].map(([m,lbl]) => (
                 <button key={m} onClick={() => { setMode(m); setError(""); }} style={{
                   flex: 1, padding: "8px 0", fontSize: 13, fontWeight: 500,
-                  borderRadius: 999, border: "none", cursor: "pointer", transition: "all 0.2s",
-                  fontFamily: "inherit",
+                  borderRadius: 999, border: "none", cursor: "pointer", transition: "all 0.2s", fontFamily: "inherit",
                   background: mode === m ? "#ffffff" : "transparent",
                   color:      mode === m ? "#111827" : "#6b7280",
                   boxShadow:  mode === m ? "0 1px 4px rgba(0,0,0,0.1)" : "none",
@@ -174,63 +179,71 @@ export default function AuthPage() {
             </h1>
             <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 24px" }}>
               {mode === "login"
-                ? "Enter your credentials to access your health dashboard."
-                : "Join 2.8M patients getting smarter healthcare."}
+                ? "Enter your credentials to access your dashboard."
+                : "Join 2.8M patients and doctors on MediSmart AI."}
             </p>
 
-            {/* Role selector (signup only) */}
-            {mode === "signup" && (
-              <>
-                <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: "0 0 10px" }}>I am a</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
-                  {[
-                    { r: "Patient", desc: "Book appointments & check symptoms",
-                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
-                          fill={role === "Patient" ? "#0d9488" : "#9ca3af"}/></svg> },
-                    { r: "Doctor", desc: "Manage patients & appointments",
-                      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <rect x="9" y="2" width="6" height="4" rx="1" stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" fill="none"/>
-                        <path d="M5 6h14v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6z" stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" fill="none"/>
-                        <path d="M12 10v6M9 13h6" stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" strokeLinecap="round"/>
-                      </svg> },
-                  ].map(({ r, desc, icon }) => (
-                    <div key={r} onClick={() => setRole(r)} style={{
-                      padding: "14px 16px", borderRadius: 16, cursor: "pointer",
-                      border: `2px solid ${role === r ? "#14b8a6" : "#e5e7eb"}`,
-                      background: role === r ? "rgba(20,184,166,0.04)" : "#fff",
-                      transition: "all 0.15s",
-                    }}>
-                      <div style={{ marginBottom: 6 }}>{icon}</div>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{r}</div>
-                      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{desc}</div>
-                    </div>
-                  ))}
+            {/* Role selector — always visible so user can pick Patient or Doctor */}
+            <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: "0 0 10px" }}>I am a</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+              {[
+                {
+                  r: "Patient",
+                  desc: "Book appointments & check symptoms",
+                  icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"
+                        fill={role === "Patient" ? "#0d9488" : "#9ca3af"}/>
+                    </svg>
+                  ),
+                },
+                {
+                  r: "Doctor",
+                  desc: "Manage patients & appointments",
+                  icon: (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <rect x="9" y="2" width="6" height="4" rx="1"
+                        stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" fill="none"/>
+                      <path d="M5 6h14v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6z"
+                        stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" fill="none"/>
+                      <path d="M12 10v6M9 13h6"
+                        stroke={role === "Doctor" ? "#0d9488" : "#9ca3af"} strokeWidth="1.8" strokeLinecap="round"/>
+                    </svg>
+                  ),
+                },
+              ].map(({ r, desc, icon }) => (
+                <div
+                  key={r}
+                  onClick={() => setRole(r)}
+                  style={{
+                    padding: "14px 16px", borderRadius: 16, cursor: "pointer",
+                    border: `2px solid ${role === r ? "#14b8a6" : "#e5e7eb"}`,
+                    background: role === r ? "rgba(20,184,166,0.04)" : "#fff",
+                    transition: "all 0.15s",
+                  }}
+                >
+                  <div style={{ marginBottom: 6 }}>{icon}</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#111827" }}>{r}</div>
+                  <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{desc}</div>
                 </div>
-              </>
-            )}
+              ))}
+            </div>
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
               <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "#dc2626", marginBottom: 14 }}>
                 {error}
               </div>
             )}
 
-            {/* Form fields */}
+            {/* Form */}
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
               {mode === "signup" && (
                 <div>
                   <label style={labelSt}>Full Name</label>
-                  <input
-                    className="input-field"
-                    style={inputSt}
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={e => setFullName(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
+                  <input className="input-field" style={inputSt} placeholder="Enter your full name"
+                    value={fullName} onChange={e => setFullName(e.target.value)} onKeyDown={handleKeyDown} />
                 </div>
               )}
 
@@ -243,15 +256,9 @@ export default function AuthPage() {
                       <path d="M22 6l-10 7L2 6" stroke="#9ca3af" strokeWidth="1.8" strokeLinecap="round"/>
                     </svg>
                   </span>
-                  <input
-                    className="input-field"
-                    type="email"
-                    placeholder="you@example.com"
+                  <input className="input-field" type="email" placeholder="you@example.com"
                     style={{ ...inputSt, paddingLeft: 38 }}
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
+                    value={email} onChange={e => setEmail(e.target.value)} onKeyDown={handleKeyDown} />
                 </div>
               </div>
 
@@ -263,15 +270,11 @@ export default function AuthPage() {
                   )}
                 </div>
                 <div style={{ position: "relative" }}>
-                  <input
-                    className="input-field"
+                  <input className="input-field"
                     type={showPassword ? "text" : "password"}
                     placeholder={mode === "login" ? "Enter your password" : "Min. 8 characters"}
                     style={{ ...inputSt, paddingRight: 42 }}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                  />
+                    value={password} onChange={e => setPassword(e.target.value)} onKeyDown={handleKeyDown} />
                   <button type="button" onClick={() => setShowPassword(v => !v)} style={eyeSt}>
                     <EyeIcon open={showPassword} />
                   </button>
@@ -282,15 +285,11 @@ export default function AuthPage() {
                 <div>
                   <label style={labelSt}>Confirm Password</label>
                   <div style={{ position: "relative" }}>
-                    <input
-                      className="input-field"
+                    <input className="input-field"
                       type={showConfirm ? "text" : "password"}
                       placeholder="Re-enter your password"
                       style={{ ...inputSt, paddingRight: 42 }}
-                      value={confirm}
-                      onChange={e => setConfirm(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                    />
+                      value={confirm} onChange={e => setConfirm(e.target.value)} onKeyDown={handleKeyDown} />
                     <button type="button" onClick={() => setShowConfirm(v => !v)} style={eyeSt}>
                       <EyeIcon open={showConfirm} />
                     </button>
@@ -298,39 +297,26 @@ export default function AuthPage() {
                 </div>
               )}
 
+              {/* Doctor-specific fields */}
               {mode === "signup" && role === "Doctor" && (
                 <>
                   <div>
                     <label style={labelSt}>Specialty</label>
-                    <input
-                      className="input-field"
-                      style={inputSt}
-                      placeholder="e.g. Cardiologist"
-                      value={specialty}
-                      onChange={e => setSpecialty(e.target.value)}
-                    />
+                    <input className="input-field" style={inputSt} placeholder="e.g. Cardiologist"
+                      value={specialty} onChange={e => setSpecialty(e.target.value)} />
                   </div>
                   <div>
                     <label style={labelSt}>Medical License Number</label>
-                    <input
-                      className="input-field"
-                      style={inputSt}
-                      placeholder="e.g. MD-1234567"
-                      value={license}
-                      onChange={e => setLicense(e.target.value)}
-                    />
+                    <input className="input-field" style={inputSt} placeholder="e.g. MD-1234567"
+                      value={license} onChange={e => setLicense(e.target.value)} />
                   </div>
                 </>
               )}
 
               {mode === "signup" && (
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 12, color: "#6b7280", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={agreed}
-                    onChange={e => setAgreed(e.target.checked)}
-                    style={{ marginTop: 2, accentColor: "#14b8a6" }}
-                  />
+                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: "#14b8a6" }} />
                   <span>
                     I agree to the{" "}
                     <span style={{ color: "#14b8a6", cursor: "pointer" }}>Terms of Service</span>{" "}
@@ -339,24 +325,19 @@ export default function AuthPage() {
                 </label>
               )}
 
-              <button
-                className="cta-btn"
-                onClick={handleSubmit}
-                disabled={loading}
-                style={{
-                  width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
-                  background: loading ? "#9ca3af" : "linear-gradient(135deg,#0d9488 0%,#14b8a6 100%)",
-                  color: "#fff", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
-                  letterSpacing: "0.1px", fontFamily: "inherit",
-                  boxShadow: loading ? "none" : "0 6px 22px rgba(20,184,166,0.38)",
-                  transition: "all 0.15s",
-                }}
-              >
+              <button className="cta-btn" onClick={handleSubmit} disabled={loading} style={{
+                width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
+                background: loading ? "#9ca3af" : "linear-gradient(135deg,#0d9488 0%,#14b8a6 100%)",
+                color: "#fff", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
+                letterSpacing: "0.1px", fontFamily: "inherit",
+                boxShadow: loading ? "none" : "0 6px 22px rgba(20,184,166,0.38)",
+                transition: "all 0.15s",
+              }}>
                 {loading
                   ? "Please wait…"
                   : mode === "login"
-                    ? "Sign In to Dashboard"
-                    : "Create Free Account"}
+                    ? (role === "Doctor" ? "Sign In to Doctor Dashboard" : "Sign In to Dashboard")
+                    : (role === "Doctor" ? "Create Doctor Account" : "Create Free Account")}
               </button>
             </div>
 
@@ -386,7 +367,7 @@ export default function AuthPage() {
               </button>
             </div>
 
-            {/* Footer link */}
+            {/* Footer */}
             <p style={{ textAlign: "center", fontSize: 12, marginTop: 20, color: "#6b7280" }}>
               {mode === "login" ? (
                 <>Don't have an account?{" "}
@@ -402,10 +383,8 @@ export default function AuthPage() {
                 </>
               )}
             </p>
-            <p
-              style={{ textAlign: "center", fontSize: 12, marginTop: 8, color: "#9ca3af", cursor: "pointer" }}
-              onClick={() => navigate("/")}
-            >
+            <p style={{ textAlign: "center", fontSize: 12, marginTop: 8, color: "#9ca3af", cursor: "pointer" }}
+               onClick={() => navigate("/")}>
               ← Back to homepage
             </p>
 
@@ -416,24 +395,19 @@ export default function AuthPage() {
   );
 }
 
-/* ── Shared style constants ── */
-const labelSt = {
-  display: "block", fontSize: 12, fontWeight: 600,
-  color: "#374151", marginBottom: 6,
-};
+/* ── Shared styles ── */
+const labelSt = { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 };
 
 const inputSt = {
   width: "100%", padding: "10px 14px",
   border: "1.5px solid #e5e7eb", borderRadius: 12,
   fontSize: 13, color: "#111827", outline: "none",
   background: "#fff", transition: "border-color 0.15s, box-shadow 0.15s",
-  boxSizing: "border-box",
-  fontFamily: "'DM Sans', system-ui, sans-serif",
+  boxSizing: "border-box", fontFamily: "'DM Sans', system-ui, sans-serif",
 };
 
 const eyeSt = {
-  position: "absolute", right: 12, top: "50%",
-  transform: "translateY(-50%)",
+  position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
   background: "none", border: "none", cursor: "pointer",
   color: "#9ca3af", display: "flex", alignItems: "center", padding: 0,
 };
