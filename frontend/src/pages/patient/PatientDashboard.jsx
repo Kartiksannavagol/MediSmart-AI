@@ -115,7 +115,7 @@ function NotifDropdown({notifs,onClose,onMarkRead,onMarkAllRead}){
   return(
     <>
       <div onClick={onClose} style={{position:"fixed",inset:0,zIndex:98}}/>
-      <div style={{position:"absolute",top:50,right:0,zIndex:99,width:340,background:"#fff",borderRadius:20,border:`1px solid ${T.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.13)",overflow:"hidden"}}>
+      <div style={{position:"absolute",top:50,right:0,zIndex:99,width:"min(340px,calc(100vw - 24px))",background:"#fff",borderRadius:20,border:`1px solid ${T.border}`,boxShadow:"0 20px 60px rgba(0,0,0,0.13)",overflow:"hidden"}}>
         <div style={{padding:"14px 18px 10px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:14,fontWeight:800,color:T.text}}>Notifications</span>
           <button onClick={onMarkAllRead} style={{fontSize:11,color:T.teal,fontWeight:700,background:"none",border:"none",cursor:"pointer",fontFamily:"inherit"}}>Mark all read</button>
@@ -459,16 +459,16 @@ function Overview({setActiveTab,appointments,meds,setMeds,records}){
   const [joinAppt,setJoinAppt]=useState(null);
 
   return(
-    <div style={{display:"flex",flexDirection:"column",gap:22}}>
+    <div style={{display:"flex",flexDirection:"column",gap:16}}>
       {joinAppt&&<JoinCallModal appt={joinAppt} onClose={()=>setJoinAppt(null)}/>}
 
       {/* Hero */}
-      <div style={{background:"linear-gradient(135deg,#0b1c2c 0%,#0d3347 60%,#083344 100%)",borderRadius:28,padding:"28px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden"}}>
+      <div className="dash-hero" style={{background:"linear-gradient(135deg,#0b1c2c 0%,#0d3347 60%,#083344 100%)",borderRadius:28,padding:"28px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",right:180,top:-50,width:200,height:200,borderRadius:"50%",background:"rgba(20,184,166,0.07)",pointerEvents:"none"}}/>
         <div style={{zIndex:1}}>
           <p style={{fontSize:12,color:"rgba(255,255,255,0.5)",margin:"0 0 4px",fontWeight:500}}>Good {new Date().getHours()<12?"morning":"afternoon"} 👋</p>
-          <h2 style={{fontSize:22,fontWeight:800,color:"#fff",margin:"0 0 8px",fontFamily:"Georgia,serif"}}>Welcome back, <em style={{color:"#2dd4bf"}}>{patientName.split(" ")[0]}.</em></h2>
-          <p style={{fontSize:13,color:"rgba(255,255,255,0.5)",margin:"0 0 18px",lineHeight:1.65,maxWidth:380}}>
+          <h2 style={{fontSize:"clamp(16px,4vw,22px)",fontWeight:800,color:"#fff",margin:"0 0 8px",fontFamily:"Georgia,serif"}}>Welcome back, <em style={{color:"#2dd4bf"}}>{patientName.split(" ")[0]}.</em></h2>
+          <p style={{fontSize:"clamp(11px,2.5vw,13px)",color:"rgba(255,255,255,0.5)",margin:"0 0 14px",lineHeight:1.65,maxWidth:380}}>
             {upcoming.length>0?`${upcoming.length} upcoming appointment${upcoming.length>1?"s":""}`:""} · {meds.length-takenCount} medication{meds.length-takenCount!==1?"s":""} due today.
           </p>
           <div style={{display:"flex",gap:10}}>
@@ -480,7 +480,7 @@ function Overview({setActiveTab,appointments,meds,setMeds,records}){
             </button>
           </div>
         </div>
-        <div style={{zIndex:1,textAlign:"center",flexShrink:0}}>
+        <div className="dash-hero-ring" style={{zIndex:1,textAlign:"center",flexShrink:0}}>
           <div style={{position:"relative",width:110,height:110,margin:"0 auto"}}>
             <svg width="110" height="110" viewBox="0 0 120 120" style={{transform:"rotate(-90deg)"}}>
               <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="10"/>
@@ -497,7 +497,7 @@ function Overview({setActiveTab,appointments,meds,setMeds,records}){
       </div>
 
       {/* Vitals */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14}}>
+      <div className="dash-vitals" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14}}>
         {VITALS_DATA.map(v=>(
           <Card key={v.label}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
@@ -510,20 +510,20 @@ function Overview({setActiveTab,appointments,meds,setMeds,records}){
                 <span style={{fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:999,background:T.tealLight,color:T.teal2}}>Normal</span>
               )}
             </div>
-            <div style={{fontSize:26,fontWeight:800,color:T.text,lineHeight:1}}>{v.value}<span style={{fontSize:12,fontWeight:500,color:T.text3,marginLeft:4}}>{v.unit}</span></div>
+            <div className="dash-stat-num" style={{fontSize:26,fontWeight:800,color:T.text,lineHeight:1}}>{v.value}<span style={{fontSize:12,fontWeight:500,color:T.text3,marginLeft:4}}>{v.unit}</span></div>
             <div style={{fontSize:11,color:T.text3,marginTop:5,fontWeight:500}}>{v.label}</div>
           </Card>
         ))}
       </div>
 
       {/* Main grid */}
-      <div style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:20}}>
+      <div className="dash-bento" style={{display:"grid",gridTemplateColumns:"1.5fr 1fr",gap:20}}>
         <Card>
           <STitle title="Upcoming Appointments" action="View all" onAction={()=>setActiveTab("Appointments")}/>
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             {upcoming.length===0&&<p style={{fontSize:13,color:T.text3,padding:"12px 0"}}>No upcoming appointments</p>}
             {upcoming.map(a=>(
-              <div key={a.id} style={{display:"flex",alignItems:"center",gap:12,padding:"12px 13px",borderRadius:15,background:a.date==="Today"?"rgba(20,184,166,0.05)":"#fafafa",border:`1.5px solid ${a.date==="Today"?"rgba(20,184,166,0.22)":T.border}`}}>
+              <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderRadius:15,background:a.date==="Today"?"rgba(20,184,166,0.05)":"#fafafa",border:`1.5px solid ${a.date==="Today"?"rgba(20,184,166,0.22)":T.border}`,flexWrap:"wrap"}}>
                 <img src={a.avatar} alt="" style={{width:40,height:40,borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:700,color:T.text}}>{a.doctor}</div>
@@ -576,7 +576,7 @@ function Overview({setActiveTab,appointments,meds,setMeds,records}){
       {/* Recent reports */}
       <Card>
         <STitle title="Recent Reports" action="View all" onAction={()=>setActiveTab("Records")}/>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+        <div className="dash-reports" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
           {records.slice(0,4).map((r,i)=>(
             <div key={r.id||i} style={{padding:13,borderRadius:15,background:"#fafafa",border:`1px solid ${T.border}`,cursor:"pointer",transition:"all 0.15s"}}
               onMouseEnter={e=>{e.currentTarget.style.border="1px solid rgba(20,184,166,0.3)";e.currentTarget.style.background=T.tealLight;}}
@@ -809,7 +809,7 @@ function AppointmentsTab({appointments,setAppointments,setActiveTab}){
 
       <div style={{display:"flex",flexDirection:"column",gap:12}}>
         {list.map(a=>(
-          <div key={a.id} style={{display:"flex",alignItems:"center",gap:15,padding:"15px 18px",borderRadius:19,background:"#fafafa",border:`1.5px solid ${T.border}`,transition:"all 0.15s"}}
+          <div key={a.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",borderRadius:19,background:"#fafafa",border:`1.5px solid ${T.border}`,transition:"all 0.15s",flexWrap:"wrap"}}
             onMouseEnter={e=>{e.currentTarget.style.border="1.5px solid rgba(20,184,166,0.2)";e.currentTarget.style.background="rgba(20,184,166,0.02)";}}
             onMouseLeave={e=>{e.currentTarget.style.border=`1.5px solid ${T.border}`;e.currentTarget.style.background="#fafafa";}}>
             <img src={a.avatar} alt="" style={{width:50,height:50,borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>
@@ -823,7 +823,7 @@ function AppointmentsTab({appointments,setAppointments,setActiveTab}){
                 {"rating"in a&&<span style={{fontSize:11,fontWeight:600,background:"rgba(245,158,11,0.1)",color:T.amber,padding:"3px 10px",borderRadius:999}}>{"⭐".repeat(a.rating)}</span>}
               </div>
             </div>
-            <div style={{display:"flex",gap:7,flexShrink:0,flexWrap:"wrap"}}>
+            <div className="dash-appt-btns" style={{display:"flex",gap:7,flexShrink:0,flexWrap:"wrap"}}>
               {tab==="upcoming"&&a.date==="Today"&&a.mode==="Video"&&(
                 <button onClick={()=>setJoinAppt(a)} style={{...mkBtn(T.teal,"#fff",{fontSize:12,boxShadow:"0 4px 14px rgba(20,184,166,0.3)",display:"flex",alignItems:"center",gap:5})}}><Video size={12}/>Join Call</button>
               )}
@@ -899,7 +899,7 @@ function MedicationsTab({meds,setMeds}){
 
       <div style={{display:"flex",flexDirection:"column",gap:13}}>
         {meds.map((m,i)=>(
-          <div key={m.id} style={{display:"flex",alignItems:"center",gap:15,padding:"17px 20px",borderRadius:19,background:m.taken?"#f0fdf4":"#fafafa",border:`1.5px solid ${m.taken?"#bbf7d0":T.border}`,transition:"all 0.2s"}}>
+          <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"14px 16px",borderRadius:19,background:m.taken?"#f0fdf4":"#fafafa",border:`1.5px solid ${m.taken?"#bbf7d0":T.border}`,transition:"all 0.2s",flexWrap:"wrap"}}>
             <div style={{width:48,height:48,borderRadius:14,flexShrink:0,background:m.taken?"#dcfce7":T.tealLight,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>💊</div>
             <div style={{flex:1}}>
               <div style={{fontSize:15,fontWeight:800,color:T.text}}>{m.name} <span style={{color:T.text3,fontWeight:500,fontSize:13}}>{m.dose}</span></div>
@@ -962,7 +962,7 @@ function RecordsTab({records,setRecords}){
         </div>
       </div>
 
-      <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:13}}>
+      <div className="dash-two-col" style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:13}}>
         {filtered.map((r,i)=>(
           <div key={r.id||i} style={{display:"flex",alignItems:"center",gap:13,padding:"14px 16px",borderRadius:17,background:"#fafafa",border:`1.5px solid ${T.border}`,transition:"all 0.15s",cursor:"pointer"}}
             onMouseEnter={e=>{e.currentTarget.style.border="1.5px solid rgba(20,184,166,0.25)";e.currentTarget.style.background=T.tealLight;}}
@@ -1065,7 +1065,7 @@ function DoctorsTab({appointments,setAppointments}){
 
       <div style={{display:"flex",flexDirection:"column",gap:11}}>
         {filtered.map(doc=>(
-          <div key={doc.id} style={{display:"flex",alignItems:"center",gap:15,padding:"15px 18px",borderRadius:19,background:"#fafafa",border:`1.5px solid ${T.border}`,transition:"all 0.15s"}}
+          <div key={doc.id} style={{display:"flex",alignItems:"flex-start",gap:12,padding:"12px 14px",borderRadius:19,background:"#fafafa",border:`1.5px solid ${T.border}`,transition:"all 0.15s",flexWrap:"wrap"}}
             onMouseEnter={e=>{e.currentTarget.style.border="1.5px solid rgba(20,184,166,0.2)";e.currentTarget.style.background="rgba(20,184,166,0.02)";}}
             onMouseLeave={e=>{e.currentTarget.style.border=`1.5px solid ${T.border}`;e.currentTarget.style.background="#fafafa";}}>
             <img src={doc.img} alt="" style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",flexShrink:0}}/>
@@ -1083,7 +1083,7 @@ function DoctorsTab({appointments,setAppointments}){
               </div>
               <p style={{fontSize:11,color:T.teal,fontWeight:600,margin:"3px 0 0"}}>🕒 {doc.next}</p>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
+            <div className="dash-doc-btns" style={{display:"flex",flexDirection:"column",gap:6,flexShrink:0}}>
               <button onClick={()=>setBookDoc(doc)} style={{...mkBtn(isBooked(doc.name)?"#f0fdf4":T.text,isBooked(doc.name)?T.green:"#fff",{fontSize:12})}}>{isBooked(doc.name)?"✓ Booked":"Book Now"}</button>
               <button onClick={()=>setViewDoc(doc)} style={{...mkBtn("transparent",T.text2,{fontSize:11,padding:"5px 9px",border:`1px solid ${T.border2}`})}}>View Profile</button>
             </div>
@@ -1106,7 +1106,7 @@ function SettingsTab(){
     <div style={{display:"flex",flexDirection:"column",gap:16}}>
       <Card>
         <h3 style={{fontSize:16,fontWeight:800,color:T.text,margin:"0 0 18px"}}>Personal Information</h3>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:13}}>
+        <div className="dash-two-col" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:13}}>
           {[["Full Name","name","text"],["Email","email","email"],["Phone","phone","tel"],["Date of Birth","dob","date"],["Blood Type","blood","text"],["Emergency Contact","emergency","tel"]].map(([label,key,type])=>(
             <div key={key}>
               <label style={{fontSize:12,fontWeight:700,color:T.text2,display:"block",marginBottom:6}}>{label}</label>
@@ -1211,16 +1211,46 @@ export default function PatientDashboard({initialTab="Overview"}){
         ::-webkit-scrollbar{width:5px;height:5px;}
         ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px;}
         input:focus,textarea:focus,select:focus{border-color:${T.teal}!important;box-shadow:0 0 0 3px rgba(20,184,166,0.12)!important;outline:none!important;}
+        /* ── Responsive overrides ── */
+        @media(max-width:767px){
+          .dash-vitals{grid-template-columns:repeat(2,1fr)!important;}
+          .dash-bento{grid-template-columns:1fr!important;}
+          .dash-reports{grid-template-columns:repeat(2,1fr)!important;}
+          .dash-hero{flex-direction:column!important;gap:20px!important;padding:22px 18px!important;}
+          .dash-hero-ring{display:none!important;}
+          .dash-hero-content{max-width:100%!important;}
+          .dash-tabs-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch;}
+          .dash-tabs-wrap::-webkit-scrollbar{height:0!important;}
+          .dash-two-col{grid-template-columns:1fr!important;}
+          .dash-four-col{grid-template-columns:repeat(2,1fr)!important;}
+          .dash-appt-btns{flex-direction:column!important;width:100%;}
+          .dash-appt-btns button{width:100%!important;}
+          .dash-doc-btns{flex-direction:column!important;}
+          .dash-doc-btns button{width:100%!important;}
+        }
+        @media(max-width:479px){
+          .dash-vitals{grid-template-columns:1fr!important;}
+          .dash-reports{grid-template-columns:1fr!important;}
+          .dash-four-col{grid-template-columns:1fr!important;}
+          .dash-hero{padding:18px 14px!important;}
+          .dash-stat-num{font-size:20px!important;}
+        }
+        @media(min-width:768px)and(max-width:1023px){
+          .dash-vitals{grid-template-columns:repeat(2,1fr)!important;}
+          .dash-bento{grid-template-columns:1fr!important;}
+          .dash-reports{grid-template-columns:repeat(4,1fr)!important;}
+          .dash-hero{padding:26px 24px!important;}
+        }
       `}</style>
 
       {/* NAVBAR */}
-      <header style={{position:"sticky",top:0,zIndex:50,background:"rgba(255,255,255,0.90)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",borderBottom:"1px solid rgba(241,245,249,0.9)",padding:"0 34px",height:64,display:"flex",alignItems:"center",justifyContent:"space-between",gap:16}}>
-        <div style={{display:"flex",alignItems:"center",gap:9,flexShrink:0,cursor:"pointer"}} onClick={()=>setActiveTab("Overview")}>
+      <header style={{position:"sticky",top:0,zIndex:50,background:"rgba(255,255,255,0.90)",backdropFilter:"blur(16px)",WebkitBackdropFilter:"blur(16px)",borderBottom:"1px solid rgba(241,245,249,0.9)",padding:`0 clamp(12px,3vw,40px)`,height:64,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,overflowX:"hidden"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0,cursor:"pointer",minWidth:0}} onClick={()=>setActiveTab("Overview")}>
           <div style={{width:32,height:32,borderRadius:9,background:`linear-gradient(135deg,${T.teal2},${T.teal})`,display:"flex",alignItems:"center",justifyContent:"center"}}><Check size={15} color="#fff" strokeWidth={3}/></div>
           <span style={{fontSize:15,fontWeight:800,color:T.text,letterSpacing:"-0.3px"}}>MediSmart<span style={{color:T.teal}}>AI</span></span>
         </div>
 
-        <div style={{display:"flex",alignItems:"center",gap:3,background:"#f8fafc",borderRadius:14,padding:4,border:`1px solid ${T.border}`,overflowX:"auto"}}>
+        <div className="dash-tabs-wrap" style={{display:"flex",alignItems:"center",gap:2,background:"#f8fafc",borderRadius:14,padding:4,border:`1px solid ${T.border}`,overflowX:"auto",flexShrink:1,maxWidth:"calc(100vw - 260px)",scrollbarWidth:"none"}}>
           {TABS.map(tab=>(
             <button key={tab} onClick={()=>setActiveTab(tab)} style={{padding:"6px 13px",borderRadius:9,fontSize:11,fontWeight:activeTab===tab?700:500,border:"none",cursor:"pointer",background:activeTab===tab?"#fff":"transparent",color:activeTab===tab?T.text:T.text3,boxShadow:activeTab===tab?"0 2px 8px rgba(0,0,0,0.08)":"none",whiteSpace:"nowrap",fontFamily:"inherit",transition:"all 0.15s"}}>
               {tab}
@@ -1228,7 +1258,7 @@ export default function PatientDashboard({initialTab="Overview"}){
           ))}
         </div>
 
-        <div style={{display:"flex",alignItems:"center",gap:9,flexShrink:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
           <div style={{position:"relative"}}>
             <Search size={12} style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",color:T.text3,pointerEvents:"none"}}/>
             <input value={globalSearch} onChange={handleSearch} placeholder="Search anything…"
@@ -1262,7 +1292,7 @@ export default function PatientDashboard({initialTab="Overview"}){
         </div>
       </header>
 
-      <main style={{maxWidth:1200,margin:"0 auto",padding:"26px 34px 56px"}}>
+      <main style={{maxWidth:1200,margin:"0 auto",padding:"clamp(12px,4vw,32px) clamp(12px,3vw,40px) 56px"}}>
         {renderTab()}
       </main>
     </div>
