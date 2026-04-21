@@ -1211,35 +1211,53 @@ export default function PatientDashboard({initialTab="Overview"}){
         ::-webkit-scrollbar{width:5px;height:5px;}
         ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px;}
         input:focus,textarea:focus,select:focus{border-color:${T.teal}!important;box-shadow:0 0 0 3px rgba(20,184,166,0.12)!important;outline:none!important;}
-        /* ── Responsive overrides ── */
+        /* ════════════════════════════════════════
+           RESPONSIVE BREAKPOINTS — Patient Dashboard
+           ════════════════════════════════════════ */
+
+        /* ── Tablet (768–1023px) ── */
+        @media(min-width:768px) and (max-width:1023px){
+          .dash-vitals   { grid-template-columns:repeat(2,1fr) !important; }
+          .dash-bento    { grid-template-columns:1fr            !important; }
+          .dash-reports  { grid-template-columns:repeat(4,1fr)  !important; }
+          .dash-hero     { padding:26px 24px !important; }
+          .dash-two-col  { grid-template-columns:1fr !important; }
+          .dash-tabs-wrap{ max-width:calc(100vw - 220px) !important; }
+        }
+
+        /* ── Mobile (< 768px) ── */
         @media(max-width:767px){
-          .dash-vitals{grid-template-columns:repeat(2,1fr)!important;}
-          .dash-bento{grid-template-columns:1fr!important;}
-          .dash-reports{grid-template-columns:repeat(2,1fr)!important;}
-          .dash-hero{flex-direction:column!important;gap:20px!important;padding:22px 18px!important;}
-          .dash-hero-ring{display:none!important;}
-          .dash-hero-content{max-width:100%!important;}
-          .dash-tabs-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch;}
-          .dash-tabs-wrap::-webkit-scrollbar{height:0!important;}
-          .dash-two-col{grid-template-columns:1fr!important;}
-          .dash-four-col{grid-template-columns:repeat(2,1fr)!important;}
-          .dash-appt-btns{flex-direction:column!important;width:100%;}
-          .dash-appt-btns button{width:100%!important;}
-          .dash-doc-btns{flex-direction:column!important;}
-          .dash-doc-btns button{width:100%!important;}
+          .dash-vitals    { grid-template-columns:repeat(2,1fr) !important; gap:10px !important; }
+          .dash-bento     { grid-template-columns:1fr !important; }
+          .dash-reports   { grid-template-columns:repeat(2,1fr) !important; }
+          .dash-hero      { flex-direction:column !important; gap:16px !important; padding:18px 14px !important; }
+          .dash-hero-ring { display:none !important; }
+          .dash-two-col   { grid-template-columns:1fr !important; }
+          .dash-four-col  { grid-template-columns:repeat(2,1fr) !important; }
+          .dash-appt-btns { flex-direction:column !important; width:100% !important; }
+          .dash-appt-btns button { width:100% !important; }
+          .dash-doc-btns  { flex-direction:row !important; flex-wrap:wrap !important; }
+          .dash-doc-btns button  { flex:1 1 calc(50% - 4px) !important; }
+          .dash-tabs-wrap {
+            overflow-x:auto !important;
+            -webkit-overflow-scrolling:touch;
+            scrollbar-width:none;
+            max-width:calc(100vw - 130px) !important;
+          }
+          .dash-tabs-wrap::-webkit-scrollbar { display:none !important; }
+          .dash-search    { display:none !important; }
+          .dash-name-text { display:none !important; }
+          .dash-logo-text { font-size:14px !important; }
         }
+
+        /* ── Small mobile (< 480px) ── */
         @media(max-width:479px){
-          .dash-vitals{grid-template-columns:1fr!important;}
-          .dash-reports{grid-template-columns:1fr!important;}
-          .dash-four-col{grid-template-columns:1fr!important;}
-          .dash-hero{padding:18px 14px!important;}
-          .dash-stat-num{font-size:20px!important;}
-        }
-        @media(min-width:768px)and(max-width:1023px){
-          .dash-vitals{grid-template-columns:repeat(2,1fr)!important;}
-          .dash-bento{grid-template-columns:1fr!important;}
-          .dash-reports{grid-template-columns:repeat(4,1fr)!important;}
-          .dash-hero{padding:26px 24px!important;}
+          .dash-vitals   { grid-template-columns:1fr !important; }
+          .dash-reports  { grid-template-columns:1fr !important; }
+          .dash-four-col { grid-template-columns:1fr !important; }
+          .dash-hero     { padding:14px 12px !important; }
+          .dash-stat-num { font-size:20px !important; }
+          .dash-doc-btns button { flex:1 1 100% !important; }
         }
       `}</style>
 
@@ -1259,7 +1277,7 @@ export default function PatientDashboard({initialTab="Overview"}){
         </div>
 
         <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <div style={{position:"relative"}}>
+          <div className="dash-search" style={{position:"relative"}}>
             <Search size={12} style={{position:"absolute",left:9,top:"50%",transform:"translateY(-50%)",color:T.text3,pointerEvents:"none"}}/>
             <input value={globalSearch} onChange={handleSearch} placeholder="Search anything…"
               style={{paddingLeft:28,paddingRight:11,paddingTop:7,paddingBottom:7,border:`1.5px solid ${T.border2}`,borderRadius:11,fontSize:12,color:T.text,background:"#fff",width:160,fontFamily:"inherit"}}/>
@@ -1278,7 +1296,7 @@ export default function PatientDashboard({initialTab="Overview"}){
               {patientName.charAt(0).toUpperCase()}
             </div>
             <div>
-              <div style={{fontSize:12,fontWeight:700,color:T.text,lineHeight:1.2}}>{patientName.split(" ")[0]}</div>
+              <div className="dash-name-text" style={{fontSize:12,fontWeight:700,color:T.text,lineHeight:1.2}}>{patientName.split(" ")[0]}</div>
               <div style={{fontSize:10,color:T.teal,fontWeight:700}}>Pro Plan</div>
             </div>
           </div>

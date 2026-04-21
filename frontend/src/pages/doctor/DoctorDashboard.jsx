@@ -363,7 +363,7 @@ function Overview({ setTab, appointments, messages }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:22 }}>
       {/* Hero */}
-      <div style={{ background:"linear-gradient(135deg,#0b1c2c 0%,#0d3347 55%,#083344 100%)", borderRadius:26, padding:"28px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
+      <div className="dr-hero" style={{ background:"linear-gradient(135deg,#0b1c2c 0%,#0d3347 55%,#083344 100%)", borderRadius:26, padding:"28px 32px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"relative", overflow:"hidden" }}>
         <div style={{ position:"absolute", right:160, top:-50, width:200, height:200, borderRadius:"50%", background:"rgba(20,184,166,0.07)", pointerEvents:"none" }}/>
         <div style={{ zIndex:1 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
@@ -406,7 +406,7 @@ function Overview({ setTab, appointments, messages }) {
       </div>
 
       {/* Stats */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
+      <div className="dr-stats" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
         {stats.map(s=>(
           <Card key={s.label} style={{ padding:"18px 20px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:14 }}>
@@ -425,7 +425,7 @@ function Overview({ setTab, appointments, messages }) {
       </div>
 
       {/* Main grid */}
-      <div style={{ display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:20 }}>
+      <div className="dr-bento" style={{ display:"grid", gridTemplateColumns:"1.4fr 1fr", gap:20 }}>
         <Card>
           <STitle title="Today's Patient Queue" action="Full schedule" onAction={()=>setTab("Appointments")}/>
           {inProgress && (
@@ -598,7 +598,7 @@ function AppointmentsTab({ appointments, setAppointments }) {
                 {a.notes && <span style={{ fontSize:11, fontWeight:600, background:"rgba(139,92,246,0.1)", color:"#7c3aed", padding:"3px 10px", borderRadius:999 }}>📝 Notes</span>}
               </div>
             </div>
-            <div style={{ display:"flex", gap:8, flexShrink:0, flexWrap:"wrap" }}>
+            <div className="dr-appt-btns" style={{ display:"flex", gap:8, flexShrink:0, flexWrap:"wrap" }}>
               {a.status==="in-progress" && a.mode==="Video" && (
                 <button onClick={()=>setJoinAppt(a)} style={{ ...btn(T.teal,"#fff",{ fontSize:12, display:"flex", alignItems:"center", gap:5, boxShadow:"0 4px 14px rgba(20,184,166,0.3)" }) }}>
                   <Video size={12}/> Join Call
@@ -901,7 +901,7 @@ function DoctorSettings() {
     <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
       <Card>
         <h3 style={{ fontSize:16, fontWeight:800, color:T.text, margin:"0 0 18px" }}>Profile Information</h3>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
+        <div className="dr-two-col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
           {[["Full Name","name","text"],["Email","email","email"],["Phone","phone","tel"],["Specialty","specialty","text"],["Hospital / Clinic","hospital","text"],["License Number","license","text"],["Consultation Fee (₹)","fee","number"]].map(([label,key,type])=>(
             <div key={key}>
               <label style={{ fontSize:12, fontWeight:700, color:T.text2, display:"block", marginBottom:6 }}>{label}</label>
@@ -1018,10 +1018,68 @@ export default function DoctorDashboard() {
         ::-webkit-scrollbar{width:5px;height:5px;}
         ::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:99px;}
         input:focus,textarea:focus,select:focus{border-color:${T.teal}!important;box-shadow:0 0 0 3px rgba(20,184,166,0.1)!important;outline:none!important;}
+
+        /* ── RESPONSIVE BREAKPOINTS ─────────────────── */
+
+        /* Tablet (768-1023px) */
+        @media(min-width:768px) and (max-width:1023px){
+          .dr-stats{grid-template-columns:repeat(2,1fr)!important;}
+          .dr-bento{grid-template-columns:1fr!important;}
+          .dr-two-col{grid-template-columns:1fr!important;}
+          .dr-patients-grid{grid-template-columns:repeat(3,1fr)!important;}
+          .dr-earnings-grid{grid-template-columns:repeat(2,1fr)!important;}
+          .dr-hero{padding:24px 22px!important;}
+          .dr-nav-tabs{gap:1px!important;}
+          .dr-nav-tabs button{padding:6px 10px!important;font-size:11px!important;}
+          .dr-search-box{width:130px!important;}
+          .dr-main{padding:20px 22px 50px!important;}
+          .dr-header{padding:0 18px!important;}
+          .dr-msg-grid{grid-template-columns:260px 1fr!important;height:500px!important;}
+        }
+
+        /* Mobile (< 768px) */
+        @media(max-width:767px){
+          .dr-stats{grid-template-columns:repeat(2,1fr)!important;gap:10px!important;}
+          .dr-bento{grid-template-columns:1fr!important;}
+          .dr-two-col{grid-template-columns:1fr!important;}
+          .dr-patients-grid{grid-template-columns:1fr!important;}
+          .dr-earnings-grid{grid-template-columns:1fr!important;}
+          .dr-hero{flex-direction:column!important;gap:16px!important;padding:18px 16px!important;}
+          .dr-hero-ring{display:none!important;}
+          .dr-main{padding:14px 12px 50px!important;}
+          .dr-header{padding:0 12px!important;gap:8px!important;}
+          .dr-logo-text{display:none!important;}
+          .dr-logo-badge{display:none!important;}
+          .dr-search-box{display:none!important;}
+          .dr-profile-name{display:none!important;}
+          .dr-nav-tabs{overflow-x:auto!important;scrollbar-width:none!important;-webkit-overflow-scrolling:touch!important;max-width:calc(100vw - 140px)!important;}
+          .dr-nav-tabs::-webkit-scrollbar{display:none!important;}
+          .dr-nav-tabs button{padding:6px 10px!important;font-size:11px!important;white-space:nowrap!important;}
+          .dr-appt-btns{flex-direction:column!important;gap:5px!important;width:100%!important;}
+          .dr-appt-btns button{width:100%!important;}
+          .dr-appt-row{flex-wrap:wrap!important;}
+          .dr-msg-grid{grid-template-columns:1fr!important;height:auto!important;}
+          .dr-msg-chat{display:none!important;}
+          .dr-msg-chat.active{display:flex!important;}
+          .dr-msg-list{height:300px!important;}
+          .dr-chart-bars{height:80px!important;}
+          .dr-card{padding:14px!important;border-radius:16px!important;}
+          .dr-section-title{font-size:13px!important;}
+          .dr-stat-val{font-size:20px!important;}
+        }
+
+        /* Small mobile (< 480px) */
+        @media(max-width:479px){
+          .dr-stats{grid-template-columns:1fr!important;}
+          .dr-hero{padding:14px 12px!important;}
+          .dr-main{padding:10px 10px 50px!important;}
+          .dr-patient-btns{flex-wrap:wrap!important;}
+          .dr-patient-btns button{flex:1 1 calc(50% - 4px)!important;}
+        }
       `}</style>
 
       {/* NAVBAR */}
-      <header style={{ position:"sticky", top:0, zIndex:50, background:"rgba(255,255,255,0.90)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)", borderBottom:"1px solid rgba(241,245,249,0.9)", padding:"0 36px", height:64, display:"flex", alignItems:"center", justifyContent:"space-between", gap:20 }}>
+      <header style={{ position:"sticky", top:0, zIndex:50, background:"rgba(255,255,255,0.90)", backdropFilter:"blur(16px)", WebkitBackdropFilter:"blur(16px)", borderBottom:"1px solid rgba(241,245,249,0.9)", padding:`0 clamp(12px,3vw,36px)`, height:64, display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
 
         {/* Logo */}
         <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0, cursor:"pointer" }} onClick={()=>setActiveTab("Overview")}>
@@ -1029,13 +1087,13 @@ export default function DoctorDashboard() {
             <Check size={16} color="#fff" strokeWidth={3}/>
           </div>
           <div>
-            <span style={{ fontSize:15, fontWeight:800, color:T.text, letterSpacing:"-0.3px" }}>MediSmart<span style={{ color:T.teal }}>AI</span></span>
-            <span style={{ fontSize:10, fontWeight:700, background:T.tealLight, color:T.teal2, padding:"1px 7px", borderRadius:999, marginLeft:7 }}>Doctor</span>
+            <span className="dr-logo-text" style={{ fontSize:15, fontWeight:800, color:T.text, letterSpacing:"-0.3px" }}>MediSmart<span style={{ color:T.teal }}>AI</span></span>
+            <span className="dr-logo-badge" style={{ fontSize:10, fontWeight:700, background:T.tealLight, color:T.teal2, padding:"1px 7px", borderRadius:999, marginLeft:7 }}>Doctor</span>
           </div>
         </div>
 
         {/* Nav tabs */}
-        <div style={{ display:"flex", alignItems:"center", gap:3, background:"#f8fafc", borderRadius:14, padding:4, border:`1px solid ${T.border}` }}>
+        <div className="dr-nav-tabs" style={{ display:"flex", alignItems:"center", gap:3, background:"#f8fafc", borderRadius:14, padding:4, border:`1px solid ${T.border}` }}>
           {TABS.map(tab => {
             const active = activeTab===tab;
             const msgUnread = tab==="Messages" && messages.filter(m=>m.unread).length>0;
@@ -1054,7 +1112,8 @@ export default function DoctorDashboard() {
           <div style={{ position:"relative" }}>
             <Search size={12} style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:T.text3, pointerEvents:"none" }}/>
             <input value={search} onChange={handleSearch} placeholder="Search…"
-              style={{ paddingLeft:28, paddingRight:12, paddingTop:8, paddingBottom:8, border:`1.5px solid ${T.border2}`, borderRadius:11, fontSize:12, color:T.text, background:"#fff", width:160, fontFamily:"inherit" }}/>
+              className="dr-search-box"
+              style={{ paddingLeft:28, paddingRight:12, paddingTop:8, paddingBottom:8, border:`1.5px solid ${T.border2}`, borderRadius:11, fontSize:12, color:T.text, background:"#fff", width:150, fontFamily:"inherit" }}/>
           </div>
 
           {/* Bell */}
@@ -1082,7 +1141,7 @@ export default function DoctorDashboard() {
               <div style={{ position:"absolute", bottom:0, right:0, width:10, height:10, background:T.teal, borderRadius:"50%", border:"2px solid #fff" }}/>
             </div>
             <div>
-              <div style={{ fontSize:12, fontWeight:700, color:T.text, lineHeight:1.2 }}>{doctorName.split(" ").slice(0,2).join(" ")}</div>
+              <div className="dr-profile-name" style={{ fontSize:12, fontWeight:700, color:T.text, lineHeight:1.2 }}>{doctorName.split(" ").slice(0,2).join(" ")}</div>
               <div style={{ fontSize:10, color:T.teal2, fontWeight:700 }}>{specialty}</div>
             </div>
           </div>
@@ -1097,7 +1156,7 @@ export default function DoctorDashboard() {
         </div>
       </header>
 
-      <main style={{ maxWidth:1200, margin:"0 auto", padding:"28px 36px 60px" }}>
+      <main className="dr-main" style={{ maxWidth:1200, margin:"0 auto", padding:"clamp(14px,3vw,28px) clamp(12px,3vw,36px) 60px" }}>
         {renderTab()}
       </main>
     </div>
